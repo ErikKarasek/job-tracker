@@ -1,0 +1,8 @@
+name = "job-tracker"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "job-tracker-db"
+database_id = "4649e3c5-4cec-4e88-9c59-6f79a7092a15"
