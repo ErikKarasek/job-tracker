@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Command-center palette: near-black surfaces, one warm signal accent for what needs attention,
+   muted (not alarm-red) close-out color for rejections. Data figures render in mono; everything
+   else in the display sans, so typeface itself marks "this is a number" vs "this is content". */
+@theme {
+  --font-sans: 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-bg: #0a0c11;
+  --color-surface: #12151c;
+  --color-surface-2: #171b24;
+  --color-line: #262b36;
+  --color-line-soft: #1b1f29;
+
+  --color-ink: #e8eaf0;
+  --color-ink-2: #b7bdcc;
+  --color-mute: #7d8496;
+
+  --color-signal: #f0a537;
+  --color-signal-ink: #1a1204;
+
+  /* Validated via dataviz skill's validate_palette.js against this dark surface (#171b24):
+     CVD-safe adjacent pairs in board column order, chroma/lightness in the dark-mode band.
+     Stage identity is never color-only — every stage always ships a text label alongside the dot. */
+  --color-stage-wishlist: #199e70;
+  --color-stage-applied: #3987e5;
+  --color-stage-interview: #c98500;
+  --color-stage-offer: #008300;
+  --color-stage-rejected: #d55181;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
