@@ -5,7 +5,7 @@ import { Column } from './Column'
 import { CardEditorModal } from './CardEditorModal'
 import { useBoardData } from './useBoardData'
 
-export function Board() {
+export function Board({ canEdit }: { canEdit: boolean }) {
   const { applications, loading, error, createApplication, updateApplication, moveApplication, deleteApplication } =
     useBoardData()
   const [editorTarget, setEditorTarget] = useState<Application | 'new' | null>(null)
@@ -17,6 +17,7 @@ export function Board() {
           <h1 className="font-semibold text-xl text-ink">Job Tracker</h1>
           <p className="text-sm text-mute">{loading ? 'Loading…' : `${applications.length} applications tracked`}</p>
         </div>
+        {canEdit && (
         <button
           type="button"
           onClick={() => setEditorTarget('new')}
@@ -24,6 +25,7 @@ export function Board() {
         >
           + New application
         </button>
+        )}
       </header>
 
       {error && (
@@ -38,6 +40,7 @@ export function Board() {
             key={key}
             stage={key}
             applications={applications.filter((a) => a.stage === key)}
+            canEdit={canEdit}
             onEdit={setEditorTarget}
             onMove={moveApplication}
           />

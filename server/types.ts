@@ -62,4 +62,12 @@ export interface TimelinePoint {
 
 export interface Env {
   DB: D1Database
+  /**
+   * Shared secret for everything that changes data. Reading the board needs nothing;
+   * creating, editing, moving and deleting need this in an `x-admin-key` header.
+   * Set it with: wrangler pages secret put ADMIN_KEY --project-name job-tracker
+   * While it is unset the API refuses every write — an instance nobody has configured
+   * should be read-only, not open to the world.
+   */
+  ADMIN_KEY?: string
 }

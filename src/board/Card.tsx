@@ -5,11 +5,12 @@ import { StaleBadge } from './StaleBadge'
 
 interface CardProps {
   application: Application
+  canEdit: boolean
   onEdit: (application: Application) => void
   onMove: (id: string, stage: Stage) => void
 }
 
-export function Card({ application, onEdit, onMove }: CardProps) {
+export function Card({ application, canEdit, onEdit, onMove }: CardProps) {
   const salary = formatSalary(application.salaryMin, application.salaryMax)
 
   return (
@@ -19,6 +20,7 @@ export function Card({ application, onEdit, onMove }: CardProps) {
           <p className="truncate font-semibold text-ink">{application.role}</p>
           <p className="truncate text-sm text-ink-2">{application.company}</p>
         </div>
+        {canEdit && (
         <button
           type="button"
           onClick={() => onEdit(application)}
@@ -26,6 +28,7 @@ export function Card({ application, onEdit, onMove }: CardProps) {
         >
           Edit
         </button>
+        )}
       </div>
 
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-mute">
@@ -36,6 +39,7 @@ export function Card({ application, onEdit, onMove }: CardProps) {
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <StaleBadge lastActivityAt={application.lastActivityAt} stage={application.stage} />
+        {canEdit && (
         <label className="ml-auto flex items-center gap-1.5 text-xs text-mute">
           <span className="sr-only">Move {application.role} at {application.company} to a different stage</span>
           Move to
@@ -51,6 +55,7 @@ export function Card({ application, onEdit, onMove }: CardProps) {
             ))}
           </select>
         </label>
+        )}
       </div>
     </li>
   )

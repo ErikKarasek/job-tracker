@@ -1,9 +1,17 @@
 import type { Application, ApplicationInput, StatsSummary, TimelinePoint } from '../types'
+import { readAdminKey } from './admin-key'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Reads need no key; the server only asks for one on the methods that change data,
+  // so sending it whenever we hold one keeps every call site unchanged.
+  const adminKey = readAdminKey()
   const res = await fetch(`/api${path}`, {
     ...init,
-    headers: init?.body ? { 'Content-Type': 'application/json', ...init.headers } : init?.headers,
+    headers: {
+      ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(adminKey ? { 'x-admin-key': adminKey } : {}),
+      ...init?.headers,
+    },
   })
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string }
