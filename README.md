@@ -5,7 +5,7 @@ wishlist → applied → interview → offer or rejected — and above the board
 count from the *history* of those moves rather than from where a card happens to sit today.
 
 Live: **https://job-tracker-10s.pages.dev** (read-only unless you hold the admin key)
-Case study: **https://erik-karasek.pages.dev/job-tracker**
+Case study: **https://erikkarasek.cz/job-tracker**
 
 ## Why the funnel counts history
 
