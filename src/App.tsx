@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Board } from './board/Board'
 import { StatsDashboard } from './stats/StatsDashboard'
 import { useAdminKey } from './lib/admin-key'
+import { Inbox } from './inbox/Inbox'
 
-type View = 'board' | 'stats'
+type View = 'board' | 'inbox' | 'stats'
 
 export default function App() {
   const [view, setView] = useState<View>('board')
@@ -15,12 +16,17 @@ export default function App() {
         <TabButton active={view === 'board'} onClick={() => setView('board')}>
           Board
         </TabButton>
+        {canEdit && (
+          <TabButton active={view === 'inbox'} onClick={() => setView('inbox')}>
+            Inbox
+          </TabButton>
+        )}
         <TabButton active={view === 'stats'} onClick={() => setView('stats')}>
           Stats
         </TabButton>
         <LockButton canEdit={canEdit} onUnlock={unlock} onLock={lock} />
       </nav>
-      {view === 'board' ? <Board canEdit={canEdit} /> : <StatsDashboard />}
+      {view === 'board' ? <Board canEdit={canEdit} /> : view === 'inbox' && canEdit ? <Inbox /> : <StatsDashboard />}
     </main>
   )
 }

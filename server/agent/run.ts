@@ -19,18 +19,23 @@ export type TraceStep =
   | { kind: 'tool'; name: string; arguments: Record<string, unknown>; result: string }
   | { kind: 'message'; text: string }
 
-export type AgentResult =
-  | { status: 'draft'; draft: Draft; trace: TraceStep[] }
+// `neurons` is what the run cost out of the Workers AI daily allocation (10 000 free).
+export type AgentResult = { trace: TraceStep[]; neurons: number } & (
+  | { status: 'draft'; draft: Draft }
   // The model stopped without a draft; `message` is what it said, e.g. "paste the text".
-  | { status: 'needs_input'; message: string; trace: TraceStep[] }
-  | { status: 'failed'; message: string; trace: TraceStep[] }
+  | { status: 'needs_input'; message: string }
+  | { status: 'failed'; message: string }
+)
 
 type ChatMessage =
   | { role: 'system' | 'user'; content: string }
   | { role: 'assistant'; content: string | null; tool_calls?: RawToolCall[] }
   | { role: 'tool'; tool_call_id: string; content: string }
 type RawToolCall = { id: string; type: 'function'; function: { name: string; arguments: string } }
-type ModelOutput = { choices?: { message?: { content?: string | null; tool_calls?: RawToolCall[] } }[] }
+type ModelOutput = {
+  choices?: { message?: { content?: string | null; tool_calls?: RawToolCall[] } }[]
+  usage?: { neurons?: number }
+}
 
 const SYSTEM = `You help Erik track job applications. Given a job posting (a URL or its pasted text), you:
 1. Read the posting. For a URL, call fetch_job_posting. If that fails, stop and ask Erik, in Czech, to paste the posting text.
@@ -64,6 +69,7 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
     { role: 'user', content: task },
   ]
 
+  let neurons = 0
   let havePosting = Boolean(input.text)
   let nudged = false
 
@@ -73,6 +79,7 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
       tools: TOOL_SCHEMAS,
       max_tokens: 900,
     } as never)) as ModelOutput
+    neurons += out.usage?.neurons ?? 0
     const message = out.choices?.[0]?.message
     const calls = message?.tool_calls ?? []
 
@@ -89,7 +96,7 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
         messages.push({ role: 'user', content: 'Do not answer in text. Call submit_draft now with that draft.' })
         continue
       }
-      return { status: 'needs_input', message: text, trace }
+      return { status: 'needs_input', message: text, trace, neurons: Math.round(neurons) }
     }
 
     messages.push({ role: 'assistant', content: message?.content ?? null, tool_calls: calls })
@@ -100,7 +107,7 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
       if (call.name === 'submit_draft') {
         const draft = toDraft(call.arguments)
         trace.push({ kind: 'tool', name: call.name, arguments: call.arguments, result: draft ? 'draft ready' : 'rejected' })
-        if (draft) return { status: 'draft', draft: { ...draft, duplicateOf: await findDuplicate(env, draft) }, trace }
+        if (draft) return { status: 'draft', draft: { ...draft, duplicateOf: await findDuplicate(env, draft) }, trace, neurons: Math.round(neurons) }
         // Tell the model what was wrong and let it try again, like any other tool error.
         messages.push({ role: 'tool', tool_call_id: raw.id, content: JSON.stringify({ error: 'company, role and fitScore are required.' }) })
         continue
@@ -113,7 +120,7 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
     }
   }
 
-  return { status: 'failed', message: `No draft after ${MAX_TURNS} turns.`, trace }
+  return { status: 'failed', message: `No draft after ${MAX_TURNS} turns.`, trace, neurons: Math.round(neurons) }
 }
 
 // Same company and same role is a duplicate. Decided here in SQL rather than trusted to the

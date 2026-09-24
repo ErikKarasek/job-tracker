@@ -10,7 +10,8 @@
     "lint": "oxlint",
     "db:local": "wrangler d1 execute job-tracker-db --local --file=./migrations/0001_init.sql",
     "db:remote": "wrangler d1 execute job-tracker-db --remote --file=./migrations/0001_init.sql",
-    "deploy": "npm run build && npx --yes wrangler@4 pages deploy --branch main --commit-dirty=true"
+    "deploy": "npm run build && npx --yes wrangler@4 pages deploy --branch main --commit-dirty=true",
+    "deploy:scout": "npx --yes wrangler@4 deploy -c scout/wrangler.toml"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",

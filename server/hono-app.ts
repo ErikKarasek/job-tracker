@@ -12,6 +12,7 @@ import {
   updateApplication,
 } from './db'
 import { runAgent } from './agent/run'
+import { tick } from './scout/tick'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -76,6 +77,58 @@ app.post('/api/agent/draft', requireAdmin, async (c) => {
   const ai = c.env.AI
   if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
   return c.json(await runAgent({ ...c.env, AI: ai }, { url, text }))
+})
+
+// The scout's inbox. Behind the key even for reading: it holds cover letters, and the board's
+// visitors have no business with postings Erik has not decided on.
+app.get('/api/suggestions', requireAdmin, async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, job_url AS jobUrl, title, company, location, remote, query, fit_score AS fitScore,
+            fit_summary AS fitSummary, cover_letter AS coverLetter, salary_min AS salaryMin,
+            salary_max AS salaryMax, found_at AS foundAt, scored_at AS scoredAt
+     FROM suggestions WHERE status = 'new' ORDER BY fit_score IS NULL, fit_score DESC, found_at DESC`,
+  ).all()
+  const queued = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM suggestions WHERE status = 'queued'").first<{ n: number }>()
+  return c.json({ suggestions: results, queued: queued?.n ?? 0 })
+})
+
+// Accepting turns the suggestion into a Wishlist card; both happen in one batch.
+app.post('/api/suggestions/:id/accept', requireAdmin, async (c) => {
+  const s = await c.env.DB.prepare("SELECT * FROM suggestions WHERE id = ? AND status = 'new'")
+    .bind(c.req.param('id'))
+    .first<Record<string, string | number | null>>()
+  if (!s) return c.json({ error: 'not found' }, 404)
+  const card = await createApplication(c.env.DB, {
+    company: (s.company as string) ?? 'Unknown company',
+    role: s.title as string,
+    jobUrl: s.job_url as string,
+    location: (s.remote ? `${s.location ?? ''} (remote)`.trim() : s.location) as string | null,
+    salaryMin: s.salary_min as number | null,
+    salaryMax: s.salary_max as number | null,
+    source: 'Jobs.cz (scout)',
+    fitScore: s.fit_score as number | null,
+    fitSummary: s.fit_summary as string | null,
+  })
+  await c.env.DB.prepare("UPDATE suggestions SET status = 'accepted', decided_at = ? WHERE id = ?")
+    .bind(new Date().toISOString(), s.id)
+    .run()
+  return c.json(card, 201)
+})
+
+app.post('/api/suggestions/:id/dismiss', requireAdmin, async (c) => {
+  const r = await c.env.DB.prepare("UPDATE suggestions SET status = 'dismissed', decided_at = ? WHERE id = ? AND status = 'new'")
+    .bind(new Date().toISOString(), c.req.param('id'))
+    .run()
+  if (!r.meta.changes) return c.json({ error: 'not found' }, 404)
+  return c.body(null, 204)
+})
+
+// One scout step on demand, the same one the morning cron runs. Lets the inbox's
+// "Search now" button (and a test) drive the scout without waiting for the schedule.
+app.post('/api/scout/tick', requireAdmin, async (c) => {
+  const ai = c.env.AI
+  if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
+  return c.json(await tick({ ...c.env, AI: ai }))
 })
 
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))

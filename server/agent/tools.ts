@@ -30,7 +30,7 @@ const MIN_POSTING_CHARS = 2_500
 // Enough for any posting; stops a huge page from eating the whole daily allocation.
 const MAX_POSTING_CHARS = 8_000
 
-async function fetchJobPosting(args: Record<string, unknown>) {
+export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ ok: true; text: string } | { ok: false; reason: string }> {
   const url = str(args.url)
   if (!url || !/^https?:\/\//i.test(url)) return { ok: false, reason: 'Not an http(s) URL.' }
   let html: string
