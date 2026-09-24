@@ -13,6 +13,7 @@ interface ApplicationRow {
   notes: string | null
   fit_score: number | null
   fit_summary: string | null
+  interview_at: string | null
   stage: Stage
   applied_date: string | null
   last_activity_at: string
@@ -33,6 +34,7 @@ function rowToApplication(row: ApplicationRow): Application {
     notes: row.notes,
     fitScore: row.fit_score,
     fitSummary: row.fit_summary,
+    interviewAt: row.interview_at,
     stage: row.stage,
     appliedDate: row.applied_date,
     lastActivityAt: row.last_activity_at,
@@ -98,6 +100,7 @@ const PATCHABLE_FIELDS: Array<[keyof ApplicationInput, string]> = [
   ['notes', 'notes'],
   ['fitScore', 'fit_score'],
   ['fitSummary', 'fit_summary'],
+  ['interviewAt', 'interview_at'],
   ['appliedDate', 'applied_date'],
 ]
 

@@ -16,6 +16,7 @@ import { tick } from './scout/tick'
 import { fetchJobPosting } from './agent/tools'
 import { PHONE, cv } from './cv/content'
 import { tailorCv, type Tailoring } from './cv/tailor'
+import { getBrief, startBrief } from './interview/brief'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -60,6 +61,11 @@ app.patch('/api/applications/:id', requireAdmin, async (c) => {
   if (patch.stage && !STAGES.includes(patch.stage)) return c.json({ error: 'invalid stage' }, 400)
   const updated = await updateApplication(c.env.DB, c.req.param('id'), patch)
   if (!updated) return c.json({ error: 'not found' }, 404)
+  // Reaching Interview starts the prep brief in the background, once per card.
+  if (patch.stage === 'interview' && c.env.AI && !(await getBrief(c.env.DB, updated.id))) {
+    const work = await startBrief({ ...c.env, AI: c.env.AI }, updated.id)
+    if (work) c.executionCtx.waitUntil(work)
+  }
   return c.json(updated)
 })
 
@@ -176,6 +182,22 @@ app.post('/api/applications/:id/cv', requireAdmin, async (c) => {
     if (String(err).includes('4006')) return c.json({ error: 'The Workers AI allocation for today is used up. Try again after 2:00.' }, 503)
     throw err
   }
+})
+
+// The interview brief (server/interview/). Behind the key: it is Erik's own prep. POST writes
+// (or rewrites) it in the background and answers at once; the UI polls GET until it is ready.
+app.get('/api/applications/:id/brief', requireAdmin, async (c) => {
+  return c.json((await getBrief(c.env.DB, c.req.param('id'))) ?? { status: null })
+})
+
+app.post('/api/applications/:id/brief', requireAdmin, async (c) => {
+  const ai = c.env.AI
+  if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
+  const body = await c.req.json<{ text?: string }>().catch(() => ({}) as { text?: string })
+  const work = await startBrief({ ...c.env, AI: ai }, c.req.param('id'), body.text?.trim() || undefined)
+  if (!work) return c.json({ error: 'The card needs a posting URL first.' }, 400)
+  c.executionCtx.waitUntil(work)
+  return c.json({ status: 'writing' }, 202)
 })
 
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))

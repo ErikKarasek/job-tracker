@@ -9,9 +9,10 @@ interface CardProps {
   onEdit: (application: Application) => void
   onMove: (id: string, stage: Stage) => void
   onCv: (application: Application) => void
+  onPrep: (application: Application) => void
 }
 
-export function Card({ application, canEdit, onEdit, onMove, onCv }: CardProps) {
+export function Card({ application, canEdit, onEdit, onMove, onCv, onPrep }: CardProps) {
   const salary = formatSalary(application.salaryMin, application.salaryMax)
 
   return (
@@ -23,6 +24,16 @@ export function Card({ application, canEdit, onEdit, onMove, onCv }: CardProps) 
         </div>
         {canEdit && (
         <div className="flex shrink-0 gap-1">
+        {application.stage === 'interview' && (
+          <button
+            type="button"
+            onClick={() => onPrep(application)}
+            title="Interview prep"
+            className="rounded-md border border-stage-interview/60 px-2 py-1 text-xs text-stage-interview hover:bg-stage-interview/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
+          >
+            Prep
+          </button>
+        )}
         {application.jobUrl && (
           <button
             type="button"
@@ -48,6 +59,9 @@ export function Card({ application, canEdit, onEdit, onMove, onCv }: CardProps) 
         {application.location && <span>{application.location}</span>}
         {salary && <span>{salary}</span>}
         {application.source && <span>{application.source}</span>}
+        {application.interviewAt && (
+          <span className="text-stage-interview">interview {new Date(`${application.interviewAt}T12:00:00`).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' })}</span>
+        )}
         {application.fitScore != null && (
           <span title={application.fitSummary ?? undefined} className="text-signal">
             fit {application.fitScore}

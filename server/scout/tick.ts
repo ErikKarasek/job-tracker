@@ -11,14 +11,15 @@
 import { runAgent } from '../agent/run'
 import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
-import { sendDigest } from './email'
+import { sendDigest, sendMail } from './email'
+import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
 // A run measured ~340 neurons, so fifteen take about half of the 10 000 free a day, leaving the
 // rest for the portfolio assistant and for adding postings by hand. The rest waits for tomorrow.
 const DAILY_AGENT_RUNS = 15
 
-export type TickResult = { step: 'search' | 'score' | 'digest' | 'idle'; detail: string }
+export type TickResult = { step: 'remind' | 'search' | 'score' | 'digest' | 'idle'; detail: string }
 export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string }
 
 /** Prague-local calendar day, so "today" turns over at midnight here, not in UTC. */
@@ -31,6 +32,26 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   )
   const mark = (step: string) =>
     env.DB.prepare('INSERT OR IGNORE INTO scout_log (day, step, at) VALUES (?, ?, ?)').bind(day, step, new Date().toISOString()).run()
+
+  // 0. The day before an interview, its brief goes out by e-mail. Cheap, so it comes first.
+  const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
+  const upcoming = await env.DB.prepare(
+    "SELECT id, company, role, job_url FROM applications WHERE interview_at = ? AND stage = 'interview'",
+  )
+    .bind(tomorrow)
+    .all<{ id: string; company: string; role: string; job_url: string | null }>()
+  for (const card of upcoming.results) {
+    const step = `remind:${card.id}`
+    if (done.has(step)) continue
+    await mark(step)
+    const brief = await getBrief(env.DB, card.id)
+    const body =
+      brief?.status === 'ready' && brief.brief
+        ? briefText(brief.brief)
+        : 'Podklady k pohovoru zatím nejsou hotové. Otevři kartu v Job Trackeru a nech je napsat.'
+    const sent = await sendMail(env, `Zítra pohovor: ${card.role}, ${card.company}`, `${body}\n\n${card.job_url ?? ''}`)
+    return { step: 'remind', detail: `interview reminder for ${card.company}: ${sent}` }
+  }
 
   // 1. The next results page not yet read today. Page n+1 only when page n came back full.
   for (const source of SOURCES) {

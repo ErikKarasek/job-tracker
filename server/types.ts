@@ -15,6 +15,8 @@ export interface Application {
   /** 0-100, set by the job-posting agent; null for cards added by hand. */
   fitScore: number | null
   fitSummary: string | null
+  /** Date (YYYY-MM-DD) of the interview, set by hand; the scout mails the brief the day before. */
+  interviewAt: string | null
   stage: Stage
   appliedDate: string | null
   lastActivityAt: string
@@ -33,6 +35,7 @@ export interface ApplicationInput {
   notes?: string | null
   fitScore?: number | null
   fitSummary?: string | null
+  interviewAt?: string | null
   stage?: Stage
   appliedDate?: string | null
 }

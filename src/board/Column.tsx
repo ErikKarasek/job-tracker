@@ -9,9 +9,10 @@ interface ColumnProps {
   onEdit: (application: Application) => void
   onMove: (id: string, stage: Stage) => void
   onCv: (application: Application) => void
+  onPrep: (application: Application) => void
 }
 
-export function Column({ stage, applications, canEdit, onEdit, onMove, onCv }: ColumnProps) {
+export function Column({ stage, applications, canEdit, onEdit, onMove, onCv, onPrep }: ColumnProps) {
   const config = stageConfig(stage)
 
   return (
@@ -24,7 +25,7 @@ export function Column({ stage, applications, canEdit, onEdit, onMove, onCv }: C
       <ul className="flex flex-1 flex-col gap-2 p-2.5">
         {applications.length === 0 && <p className="px-1 py-4 text-center text-xs text-mute">{config.description}</p>}
         {applications.map((application) => (
-          <Card key={application.id} application={application} canEdit={canEdit} onEdit={onEdit} onMove={onMove} onCv={onCv} />
+          <Card key={application.id} application={application} canEdit={canEdit} onEdit={onEdit} onMove={onMove} onCv={onCv} onPrep={onPrep} />
         ))}
       </ul>
     </section>

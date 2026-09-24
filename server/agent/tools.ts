@@ -56,7 +56,7 @@ export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ 
   return { ok: true, text: text.slice(0, MAX_POSTING_CHARS) }
 }
 
-function htmlToText(html: string) {
+export function htmlToText(html: string) {
   return html
     // Not <header>: posting pages often put the job title in one.
     .replace(/<(script|style|noscript|svg|nav|footer)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
