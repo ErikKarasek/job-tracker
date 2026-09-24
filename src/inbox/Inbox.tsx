@@ -14,6 +14,7 @@ export function Inbox() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [running, setRunning] = useState<string | null>(null)
+  const [lastRun, setLastRun] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -33,16 +34,30 @@ export function Inbox() {
   }, [load])
 
   // Runs the same steps the morning cron does, one request each, until the scout says it is done
-  // for today. Each step is short, so a slow agent run never holds one request for long.
+  // for today. Each step is short, so a slow agent run never holds one request for long. The
+  // last message stays on screen: it is the only place a stop (e.g. the AI allocation running
+  // out) is explained.
   async function searchNow() {
-    for (let i = 0; i < 40; i++) {
-      const r = await api.scoutTick().catch((err: Error) => ({ step: 'idle' as const, detail: err.message }))
-      setRunning(`${r.step}: ${r.detail}`)
-      if (r.step === 'score') await load()
-      if (r.step === 'idle' || r.step === 'digest') break
+    setError(null)
+    let last = ''
+    let failure: string | null = null
+    for (let i = 0; i < 60; i++) {
+      try {
+        const r = await api.scoutTick()
+        last = `${r.step}: ${r.detail}`
+        setRunning(last)
+        if (r.step === 'score') await load()
+        if (r.step === 'idle' || r.step === 'digest' || r.detail.includes('used up')) break
+      } catch (err) {
+        failure = `The scout stopped: ${err instanceof Error ? err.message : String(err)}`
+        break
+      }
     }
     setRunning(null)
+    setLastRun(last || null)
     await load()
+    // After load(), which clears errors from earlier requests.
+    if (failure) setError(failure)
   }
 
   async function decide(id: string, action: 'accept' | 'dismiss') {
@@ -75,7 +90,9 @@ export function Inbox() {
         </button>
       </header>
 
-      {running && <p className="rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-mute">{running}</p>}
+      {(running ?? lastRun) && (
+        <p className="rounded-md border border-line bg-surface-2 px-3 py-2 font-mono text-xs text-mute">{running ?? `Last step: ${lastRun}`}</p>
+      )}
       {error && (
         <p role="alert" className="rounded-md border border-stage-rejected/40 bg-stage-rejected/10 px-3 py-2 text-sm text-stage-rejected">
           {error}
@@ -108,7 +125,7 @@ function SuggestionCard({ s, onDecide }: { s: Suggestion; onDecide: (id: string,
           </a>
           <p className="text-sm text-ink-2">{s.company}</p>
           <p className="font-mono text-xs text-mute">
-            {[s.location, s.remote ? 'remote' : null, salary, `“${s.query}”`].filter(Boolean).join(' · ')}
+            {[s.location, s.remote ? 'remote' : null, salary, s.query].filter(Boolean).join(' · ')}
           </p>
         </div>
         {s.fitSummary && <p className="text-sm text-ink-2">{s.fitSummary}</p>}

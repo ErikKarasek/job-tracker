@@ -12,11 +12,11 @@ import { runAgent } from '../agent/run'
 import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
 import { sendDigest } from './email'
-import { PLACES, QUERIES, parseResults, searchUrl, triage, type Place } from './search'
+import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
-// A run measured ~340 neurons, so ten stay well inside the 10 000 free a day, with room left
-// for the portfolio assistant and for adding postings by hand. The rest waits for tomorrow.
-const DAILY_AGENT_RUNS = 10
+// A run measured ~340 neurons, so fifteen take about half of the 10 000 free a day, leaving the
+// rest for the portfolio assistant and for adding postings by hand. The rest waits for tomorrow.
+const DAILY_AGENT_RUNS = 15
 
 export type TickResult = { step: 'search' | 'score' | 'digest' | 'idle'; detail: string }
 export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string }
@@ -32,18 +32,22 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   const mark = (step: string) =>
     env.DB.prepare('INSERT OR IGNORE INTO scout_log (day, step, at) VALUES (?, ?, ?)').bind(day, step, new Date().toISOString()).run()
 
-  // 1. The next search not yet run today.
-  for (const query of QUERIES) {
-    for (const place of Object.keys(PLACES) as Place[]) {
-      const step = `search:${place}:${query}`
-      if (done.has(step)) continue
-      // Marked first: a search that keeps failing is skipped for today, not retried every tick.
-      await mark(step)
-      try {
-        const added = await search(env, query, place)
-        return { step: 'search', detail: `${query} (${place}): ${added} new` }
-      } catch (err) {
-        return { step: 'search', detail: `${query} (${place}) failed: ${String(err)}` }
+  // 1. The next results page not yet read today. Page n+1 only when page n came back full.
+  for (const source of SOURCES) {
+    for (const place of PLACES) {
+      for (let page = 1; page <= MAX_PAGES; page++) {
+        const step = `search:${source.key}:${place}:${page}`
+        if (done.has(step)) continue
+        if (page > 1 && !done.has(`search:${source.key}:${place}:${page - 1}:full`)) break
+        // Marked first: a search that keeps failing is skipped for today, not retried every tick.
+        await mark(step)
+        try {
+          const { cards, added } = await search(env, source, place, page)
+          if (cards >= PAGE_SIZE) await mark(`${step}:full`)
+          return { step: 'search', detail: `${source.label} (${place}) page ${page}: ${cards} found, ${added} new` }
+        } catch (err) {
+          return { step: 'search', detail: `${source.label} (${place}) page ${page} failed: ${String(err)}` }
+        }
       }
     }
   }
@@ -51,14 +55,27 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   // 2. Score the next queued posting, while today's agent runs last. Pages that cannot be read
   // cost no agent run, so one tick moves past up to five of them to reach one it can score.
   const runsToday = [...done].filter((s) => s.startsWith('score:')).length
-  if (runsToday < DAILY_AGENT_RUNS) {
+  if (runsToday < DAILY_AGENT_RUNS && !done.has('quota')) {
     for (let i = 0; i < 5; i++) {
       const next = await env.DB.prepare(
         "SELECT id, job_url, title FROM suggestions WHERE status = 'queued' ORDER BY priority DESC, found_at ASC LIMIT 1",
       ).first<{ id: string; job_url: string; title: string }>()
       if (!next) break
-      const ranAgent = await score(env, next.id, next.job_url, () => mark(`score:${next.id}`))
-      if (ranAgent || i === 4) return { step: 'score', detail: next.title }
+      const runStep = `score:${next.id}`
+      try {
+        const ranAgent = await score(env, next.id, next.job_url, () => mark(runStep))
+        if (ranAgent || i === 4) return { step: 'score', detail: next.title }
+      } catch (err) {
+        // The day's Workers AI allocation is shared with the portfolio assistant and can run out
+        // before the scout's own cap. Then stop scoring for today, and give back the run the
+        // failed attempt took, rather than burning a run per tick on the same error.
+        if (String(err).includes('4006')) {
+          await env.DB.prepare('DELETE FROM scout_log WHERE day = ? AND step = ?').bind(day, runStep).run()
+          await mark('quota')
+          return { step: 'score', detail: 'The Workers AI allocation for today is used up; scoring continues tomorrow.' }
+        }
+        return { step: 'score', detail: `${next.title} failed: ${String(err)}` }
+      }
     }
   }
 
@@ -88,8 +105,8 @@ export type DigestRow = {
   fit_summary: string | null
 }
 
-async function search(env: Env, query: string, place: Place) {
-  const res = await fetch(searchUrl(query, place), {
+async function search(env: Env, source: Source, place: Place, page: number) {
+  const res = await fetch(searchUrl(source, place, page), {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JobTrackerScout/1.0)', 'Accept-Language': 'cs' },
     signal: AbortSignal.timeout(10_000),
   })
@@ -121,11 +138,11 @@ async function search(env: Env, query: string, place: Place) {
       env.DB.prepare(
         `INSERT OR IGNORE INTO suggestions (id, job_url, title, company, location, remote, query, status, priority, found_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(crypto.randomUUID(), f.url, f.title, f.company, f.location, f.remote ? 1 : 0, query, ...triaged(f.title), now),
+      ).bind(crypto.randomUUID(), f.url, f.title, f.company, f.location, f.remote ? 1 : 0, source.label, ...triaged(f.title), now),
     )
-  if (inserts.length === 0) return 0
+  if (inserts.length === 0) return { cards: found.length, added: 0 }
   const results = await env.DB.batch(inserts)
-  return results.reduce((n, r) => n + (r.meta.changes ?? 0), 0)
+  return { cards: found.length, added: results.reduce((n, r) => n + (r.meta.changes ?? 0), 0) }
 }
 
 function triaged(title: string): [string, number] {
