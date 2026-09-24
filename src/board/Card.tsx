@@ -35,6 +35,11 @@ export function Card({ application, canEdit, onEdit, onMove }: CardProps) {
         {application.location && <span>{application.location}</span>}
         {salary && <span>{salary}</span>}
         {application.source && <span>{application.source}</span>}
+        {application.fitScore != null && (
+          <span title={application.fitSummary ?? undefined} className="text-signal">
+            fit {application.fitScore}
+          </span>
+        )}
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-2">

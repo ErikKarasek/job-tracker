@@ -12,6 +12,9 @@ export interface Application {
   salaryMax: number | null
   source: string | null
   notes: string | null
+  /** 0-100, set by the job-posting agent; null for cards added by hand. */
+  fitScore: number | null
+  fitSummary: string | null
   stage: Stage
   appliedDate: string | null
   lastActivityAt: string
@@ -28,6 +31,8 @@ export interface ApplicationInput {
   salaryMax?: number | null
   source?: string | null
   notes?: string | null
+  fitScore?: number | null
+  fitSummary?: string | null
   stage?: Stage
   appliedDate?: string | null
 }
@@ -70,4 +75,6 @@ export interface Env {
    * should be read-only, not open to the world.
    */
   ADMIN_KEY?: string
+  /** Workers AI, for the job-posting agent (server/agent/). No key: it runs on this account. */
+  AI?: Ai
 }

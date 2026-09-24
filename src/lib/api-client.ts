@@ -1,4 +1,4 @@
-import type { Application, ApplicationInput, StatsSummary, TimelinePoint } from '../types'
+import type { AgentResult, Application, ApplicationInput, StatsSummary, TimelinePoint } from '../types'
 import { readAdminKey } from './admin-key'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -28,6 +28,8 @@ export const api = {
   updateApplication: (id: string, patch: Partial<ApplicationInput>) =>
     request<Application>(`/applications/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   deleteApplication: (id: string) => request<void>(`/applications/${id}`, { method: 'DELETE' }),
+  draftFromPosting: (input: { url?: string; text?: string }) =>
+    request<AgentResult>('/agent/draft', { method: 'POST', body: JSON.stringify(input) }),
   statsSummary: () => request<StatsSummary>('/stats/summary'),
   statsTimeline: () => request<TimelinePoint[]>('/stats/timeline'),
   statsStale: (days = 14) => request<Application[]>(`/stats/stale?days=${days}`),

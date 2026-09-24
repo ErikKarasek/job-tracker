@@ -11,6 +11,7 @@ import {
   listApplications,
   updateApplication,
 } from './db'
+import { runAgent } from './agent/run'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -62,6 +63,19 @@ app.delete('/api/applications/:id', requireAdmin, async (c) => {
   const deleted = await deleteApplication(c.env.DB, c.req.param('id'))
   if (!deleted) return c.json({ error: 'not found' }, 404)
   return c.body(null, 204)
+})
+
+// Behind the admin key like every write: each run spends from the account's Workers AI
+// allocation, so a stranger with the URL must not be able to start one.
+app.post('/api/agent/draft', requireAdmin, async (c) => {
+  const body = await c.req.json<{ url?: string; text?: string }>().catch(() => ({}) as { url?: string; text?: string })
+  const url = body.url?.trim() || undefined
+  const text = body.text?.trim() || undefined
+  if (!url && !text) return c.json({ error: 'Give a posting URL or paste its text.' }, 400)
+  if (url && !/^https?:\/\//i.test(url)) return c.json({ error: 'That is not an http(s) URL.' }, 400)
+  const ai = c.env.AI
+  if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
+  return c.json(await runAgent({ ...c.env, AI: ai }, { url, text }))
 })
 
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))

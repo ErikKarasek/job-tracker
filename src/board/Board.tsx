@@ -4,11 +4,13 @@ import { STAGE_CONFIG } from './stages'
 import { Column } from './Column'
 import { CardEditorModal } from './CardEditorModal'
 import { useBoardData } from './useBoardData'
+import { AgentModal } from '../agent/AgentModal'
 
 export function Board({ canEdit }: { canEdit: boolean }) {
   const { applications, loading, error, createApplication, updateApplication, moveApplication, deleteApplication } =
     useBoardData()
   const [editorTarget, setEditorTarget] = useState<Application | 'new' | null>(null)
+  const [agentOpen, setAgentOpen] = useState(false)
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
@@ -18,6 +20,14 @@ export function Board({ canEdit }: { canEdit: boolean }) {
           <p className="text-sm text-mute">{loading ? 'Loading…' : `${applications.length} applications tracked`}</p>
         </div>
         {canEdit && (
+        <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setAgentOpen(true)}
+          className="rounded-md border border-signal/60 px-3 py-2 text-sm font-medium text-signal hover:bg-signal/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+        >
+          ✨ From a posting
+        </button>
         <button
           type="button"
           onClick={() => setEditorTarget('new')}
@@ -25,6 +35,7 @@ export function Board({ canEdit }: { canEdit: boolean }) {
         >
           + New application
         </button>
+        </div>
         )}
       </header>
 
@@ -53,6 +64,8 @@ export function Board({ canEdit }: { canEdit: boolean }) {
         onSave={(input, editingId) => (editingId ? updateApplication(editingId, input) : createApplication(input))}
         onDelete={deleteApplication}
       />
+
+      <AgentModal open={agentOpen} onClose={() => setAgentOpen(false)} onSave={createApplication} />
     </div>
   )
 }

@@ -11,6 +11,8 @@ interface ApplicationRow {
   salary_max: number | null
   source: string | null
   notes: string | null
+  fit_score: number | null
+  fit_summary: string | null
   stage: Stage
   applied_date: string | null
   last_activity_at: string
@@ -29,6 +31,8 @@ function rowToApplication(row: ApplicationRow): Application {
     salaryMax: row.salary_max,
     source: row.source,
     notes: row.notes,
+    fitScore: row.fit_score,
+    fitSummary: row.fit_summary,
     stage: row.stage,
     appliedDate: row.applied_date,
     lastActivityAt: row.last_activity_at,
@@ -57,8 +61,8 @@ export async function createApplication(db: D1Database, input: ApplicationInput)
   await db
     .prepare(
       `INSERT INTO applications
-        (id, company, role, job_url, location, salary_min, salary_max, source, notes, stage, applied_date, last_activity_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, company, role, job_url, location, salary_min, salary_max, source, notes, fit_score, fit_summary, stage, applied_date, last_activity_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       id,
@@ -70,6 +74,8 @@ export async function createApplication(db: D1Database, input: ApplicationInput)
       input.salaryMax ?? null,
       input.source ?? null,
       input.notes ?? null,
+      input.fitScore ?? null,
+      input.fitSummary ?? null,
       stage,
       input.appliedDate ?? null,
       now,
@@ -90,6 +96,8 @@ const PATCHABLE_FIELDS: Array<[keyof ApplicationInput, string]> = [
   ['salaryMax', 'salary_max'],
   ['source', 'source'],
   ['notes', 'notes'],
+  ['fitScore', 'fit_score'],
+  ['fitSummary', 'fit_summary'],
   ['appliedDate', 'applied_date'],
 ]
 
