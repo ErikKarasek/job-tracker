@@ -5,12 +5,14 @@ import { Column } from './Column'
 import { CardEditorModal } from './CardEditorModal'
 import { useBoardData } from './useBoardData'
 import { AgentModal } from '../agent/AgentModal'
+import { CvView } from '../cv/CvView'
 
 export function Board({ canEdit }: { canEdit: boolean }) {
   const { applications, loading, error, createApplication, updateApplication, moveApplication, deleteApplication } =
     useBoardData()
   const [editorTarget, setEditorTarget] = useState<Application | 'new' | null>(null)
   const [agentOpen, setAgentOpen] = useState(false)
+  const [cvFor, setCvFor] = useState<Application | null>(null)
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
@@ -54,6 +56,7 @@ export function Board({ canEdit }: { canEdit: boolean }) {
             canEdit={canEdit}
             onEdit={setEditorTarget}
             onMove={moveApplication}
+            onCv={setCvFor}
           />
         ))}
       </div>
@@ -66,6 +69,7 @@ export function Board({ canEdit }: { canEdit: boolean }) {
       />
 
       <AgentModal open={agentOpen} onClose={() => setAgentOpen(false)} onSave={createApplication} />
+      {cvFor && <CvView application={cvFor} onClose={() => setCvFor(null)} />}
     </div>
   )
 }

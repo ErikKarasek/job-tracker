@@ -8,9 +8,10 @@ interface CardProps {
   canEdit: boolean
   onEdit: (application: Application) => void
   onMove: (id: string, stage: Stage) => void
+  onCv: (application: Application) => void
 }
 
-export function Card({ application, canEdit, onEdit, onMove }: CardProps) {
+export function Card({ application, canEdit, onEdit, onMove, onCv }: CardProps) {
   const salary = formatSalary(application.salaryMin, application.salaryMax)
 
   return (
@@ -21,6 +22,17 @@ export function Card({ application, canEdit, onEdit, onMove }: CardProps) {
           <p className="truncate text-sm text-ink-2">{application.company}</p>
         </div>
         {canEdit && (
+        <div className="flex shrink-0 gap-1">
+        {application.jobUrl && (
+          <button
+            type="button"
+            onClick={() => onCv(application)}
+            title="A CV fitted to this posting"
+            className="rounded-md border border-signal/50 px-2 py-1 text-xs text-signal hover:bg-signal/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-signal"
+          >
+            CV
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onEdit(application)}
@@ -28,6 +40,7 @@ export function Card({ application, canEdit, onEdit, onMove }: CardProps) {
         >
           Edit
         </button>
+        </div>
         )}
       </div>
 

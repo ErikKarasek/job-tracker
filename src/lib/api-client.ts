@@ -1,3 +1,5 @@
+import type { Cv } from '../../server/cv/content'
+import type { Tailoring } from '../../server/cv/tailor'
 import type { AgentResult, Application, ApplicationInput, StatsSummary, Suggestion, TickResult, TimelinePoint } from '../types'
 import { readAdminKey } from './admin-key'
 
@@ -15,11 +17,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new Error(body.error ?? `Request failed: ${res.status}`)
+    // The rest of the body rides along on the error, e.g. `needsText` from the CV route.
+    throw Object.assign(new Error(body.error ?? `Request failed: ${res.status}`), body)
   }
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
+
+export type CvResponse = { tailoring: Tailoring | null; cv: Cv; phone: string }
 
 export const api = {
   listApplications: () => request<Application[]>('/applications'),
@@ -34,6 +39,9 @@ export const api = {
   acceptSuggestion: (id: string) => request<Application>(`/suggestions/${id}/accept`, { method: 'POST' }),
   dismissSuggestion: (id: string) => request<void>(`/suggestions/${id}/dismiss`, { method: 'POST' }),
   scoutTick: () => request<TickResult>('/scout/tick', { method: 'POST' }),
+  getCv: (id: string) => request<CvResponse>(`/applications/${id}/cv`),
+  tailorCv: (id: string, text?: string) =>
+    request<CvResponse>(`/applications/${id}/cv`, { method: 'POST', body: JSON.stringify({ text }) }),
   statsSummary: () => request<StatsSummary>('/stats/summary'),
   statsTimeline: () => request<TimelinePoint[]>('/stats/timeline'),
   statsStale: (days = 14) => request<Application[]>(`/stats/stale?days=${days}`),

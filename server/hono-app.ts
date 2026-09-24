@@ -13,6 +13,9 @@ import {
 } from './db'
 import { runAgent } from './agent/run'
 import { tick } from './scout/tick'
+import { fetchJobPosting } from './agent/tools'
+import { PHONE, cv } from './cv/content'
+import { tailorCv, type Tailoring } from './cv/tailor'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -129,6 +132,50 @@ app.post('/api/scout/tick', requireAdmin, async (c) => {
   const ai = c.env.AI
   if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
   return c.json(await tick({ ...c.env, AI: ai }))
+})
+
+// A CV fitted to the card's posting. Behind the key: it carries the phone number, and making
+// one spends from the Workers AI allocation. GET returns what was made before (free); POST makes
+// it, from the posting URL on the card or, when that page cannot be read, from pasted text.
+const cvResponse = (tailoring: Tailoring) => ({ tailoring, cv: cv[tailoring.lang], phone: PHONE })
+
+app.get('/api/applications/:id/cv', requireAdmin, async (c) => {
+  const row = await c.env.DB.prepare('SELECT data FROM cv_tailoring WHERE application_id = ?').bind(c.req.param('id')).first<{ data: string }>()
+  if (!row) return c.json({ tailoring: null })
+  return c.json(cvResponse(JSON.parse(row.data) as Tailoring))
+})
+
+app.post('/api/applications/:id/cv', requireAdmin, async (c) => {
+  const id = c.req.param('id')
+  const card = await c.env.DB.prepare('SELECT job_url FROM applications WHERE id = ?').bind(id).first<{ job_url: string | null }>()
+  if (!card) return c.json({ error: 'not found' }, 404)
+  const ai = c.env.AI
+  if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
+
+  const body = await c.req.json<{ text?: string }>().catch(() => ({}) as { text?: string })
+  let posting = body.text?.trim()
+  if (!posting) {
+    const page = card.job_url ? await fetchJobPosting({ url: card.job_url }) : null
+    if (!page?.ok) {
+      return c.json({ error: 'The posting cannot be read from its link. Paste its text.', needsText: true }, 422)
+    }
+    posting = page.text
+  }
+
+  try {
+    const { tailoring, neurons } = await tailorCv(ai, posting)
+    console.log(`[cv] tailored ${id}: ${neurons} neurons`)
+    await c.env.DB.prepare(
+      `INSERT INTO cv_tailoring (application_id, data, created_at) VALUES (?, ?, ?)
+       ON CONFLICT(application_id) DO UPDATE SET data = excluded.data, created_at = excluded.created_at`,
+    )
+      .bind(id, JSON.stringify(tailoring), new Date().toISOString())
+      .run()
+    return c.json(cvResponse(tailoring))
+  } catch (err) {
+    if (String(err).includes('4006')) return c.json({ error: 'The Workers AI allocation for today is used up. Try again after 2:00.' }, 503)
+    throw err
+  }
 })
 
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))
