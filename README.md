@@ -26,11 +26,54 @@ interview rate. The same log drives the per-day timeline.
   card itself, not buried in a report. Offers and rejections are excluded: nothing to chase.
 - **Stats** — stage-to-stage rates, how many applications reached each stage, applications
   started per day, and the list that needs a follow-up.
+- **Agent** — paste a posting's URL and a model with tools fetches the page, checks the board
+  for an existing application at that company, and hands back a draft card with a fit score
+  and a short cover letter in the posting's language.
+- **Scout** — every morning it searches Jobs.cz on its own and leaves what it finds, scored,
+  in an inbox. Accepting a card puts it on the board; nothing lands there unreviewed.
+- **Fitted résumé** — a button on a card reorders the résumé's projects, skills and
+  technologies for that posting and rewrites the headline and profile. The names it returns
+  are checked against the real résumé, so it can reorder but not invent or drop; the browser's
+  print dialog saves the PDF.
+
+## The agent and the scout
+
+The agent (`server/agent/`) is a model in a loop with three tools — `fetch_job_posting`,
+`find_applications`, `submit_draft` — running on Workers AI (Mistral Small 3.1, picked in a
+side-by-side for tool calling and for writing natural Czech). It stops when it submits a
+draft, six turns at most. Nothing is written to the board there: saving stays a human
+decision made in the UI.
+
+The scout (`server/scout/`) is that agent on a schedule. Pages Functions cannot run on a
+cron, so `scout/index.ts` is a separate Worker sharing the same D1 and code. A cron fires
+`tick()` every five minutes through the morning and each call does the first thing still
+left today — the next page of results, the next posting to score, or the digest e-mail —
+recording each step in `scout_log` so nothing is done twice. Small steps because a free-plan
+Worker gets 10 ms of CPU per invocation, and because a step that fails is simply picked up
+by the next one.
+
+What keeps it cheap: it searches Jobs.cz's own IT fields rather than by keyword (full-text
+"QA" mostly found factory quality control), drops senior and non-IT titles with a regex
+before any model call, reads the page before involving the model, and caps the day at 15
+agent runs — about half the free Workers AI allowance, leaving the rest for the assistant on
+the portfolio. When the allowance runs out it stops cleanly and carries on tomorrow.
+
+Deploy it, once the Pages app is up:
+
+```bash
+npx wrangler secret put RESEND_API_KEY -c scout/wrangler.toml   # for the digest e-mail
+npm run deploy:scout
+```
+
+`NOTIFY_EMAIL` (where the digest goes) and the cron window live in `scout/wrangler.toml`.
+The inbox is behind the admin key even for reading — it holds cover letters — and its
+"Search now" button runs one scout step on demand.
 
 ## Stack
 
 React 19 + Vite + Tailwind v4 on the front; a [Hono](https://hono.dev) API running as a
-Cloudflare Pages Function on a catch-all `/api/*` route; data in Cloudflare D1. TypeScript
+Cloudflare Pages Function on a catch-all `/api/*` route; data in Cloudflare D1; the models on
+Cloudflare Workers AI through an `AI` binding, so there is no API key to keep. TypeScript
 throughout, with `Application` and `Stage` shared by both halves, so renaming a stage fails
 the build until it is carried through everywhere. No state-management library — one hook,
 `useBoardData`, over `fetch`.
@@ -83,13 +126,16 @@ tool whose data is a list of job applications, and the wrong one for anything el
 
 ## Database
 
-Two tables, created by `migrations/0001_init.sql`:
+`migrations/0001_init.sql` creates the two tables the board itself needs:
 
 - `applications` — the applications themselves, including `stage` and `last_activity_at`.
 - `status_events` — one row per stage change (`from_stage` is `NULL` for the creation),
   which is what the funnel and the timeline are computed from.
 
-Apply the schema to the deployed database with `npm run db:remote`.
+The later migrations add the rest, in order: `0002_fit.sql` (the agent's fit score and cover
+letter), `0003_scout.sql` (the inbox and `scout_log`), `0004_cv.sql` (the fitted résumé,
+cached per card). Apply each one with `wrangler d1 execute job-tracker-db --remote
+--file=./migrations/<name>.sql`; `npm run db:remote` only runs the first.
 
 ## Deploying
 
