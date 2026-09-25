@@ -28,9 +28,14 @@ const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/P
 
 export async function tick(env: ScoutEnv): Promise<TickResult> {
   const day = today()
-  const done = new Set(
-    (await env.DB.prepare('SELECT step FROM scout_log WHERE day = ?').bind(day).all<{ step: string }>()).results.map((r) => r.step),
-  )
+  const log = (await env.DB.prepare('SELECT step, at FROM scout_log WHERE day = ?').bind(day).all<{ step: string; at: string }>()).results
+  const done = new Set(log.map((r) => r.step))
+  // Hitting the AI limit pauses scoring for an hour, not for the day: on 2026-09-25 a morning
+  // mark kept the scout idle all day, long after the plan upgrade had lifted the limit.
+  const quotaAt = log.find((r) => r.step === 'quota')?.at
+  const paused = quotaAt !== undefined && Date.now() - Date.parse(quotaAt) < 60 * 60 * 1000
+  const pause = () =>
+    env.DB.prepare('INSERT OR REPLACE INTO scout_log (day, step, at) VALUES (?, ?, ?)').bind(day, 'quota', new Date().toISOString()).run()
   const mark = (step: string) =>
     env.DB.prepare('INSERT OR IGNORE INTO scout_log (day, step, at) VALUES (?, ?, ?)').bind(day, step, new Date().toISOString()).run()
 
@@ -78,12 +83,12 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   // (score.ts), so one tick scores up to three; pages that cannot be read cost nothing and are
   // moved past, up to eight postings a tick in all.
   const runsToday = [...done].filter((s) => s.startsWith('score:')).length
-  const budget = runsToday < DAILY_AGENT_RUNS && !done.has('quota') ? await overBudget(env.DB, 'scout') : null
+  const budget = runsToday < DAILY_AGENT_RUNS && !paused ? await overBudget(env.DB, 'scout') : null
   if (budget) {
-    await mark('quota')
+    await pause()
     return { step: 'score', detail: budget }
   }
-  if (runsToday < DAILY_AGENT_RUNS && !done.has('quota')) {
+  if (runsToday < DAILY_AGENT_RUNS && !paused) {
     const scored: string[] = []
     for (let i = 0; i < 8 && scored.length < 3 && runsToday + scored.length < DAILY_AGENT_RUNS; i++) {
       const next = await env.DB.prepare(
@@ -99,8 +104,8 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
         // failed attempt took, rather than burning a run per tick on the same error.
         if (String(err).includes('4006')) {
           await env.DB.prepare('DELETE FROM scout_log WHERE day = ? AND step = ?').bind(day, runStep).run()
-          await mark('quota')
-          return { step: 'score', detail: 'The Workers AI allocation for today is used up; scoring continues tomorrow.' }
+          await pause()
+          return { step: 'score', detail: 'The Workers AI limit is reached; scoring pauses for an hour and tries again.' }
         }
         // Any other failure (a reply that is not the JSON asked for): put the posting in the inbox
         // unscored, so it is neither lost nor retried on every tick.
@@ -113,6 +118,13 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     // Only unreadable pages this tick: carry on next tick while anything is left to score.
     const left = await env.DB.prepare("SELECT COUNT(*) AS n FROM suggestions WHERE status = 'queued'").first<{ n: number }>()
     if ((left?.n ?? 0) > 0) return { step: 'score', detail: 'unreadable postings moved to the inbox' }
+  }
+
+  // While scoring is paused and the morning window (until 08:55 UTC) still has room, hold the
+  // digest: it should carry scores, and a paused hour usually ends inside the window.
+  if (paused && !done.has('digest') && new Date().getUTCHours() < 8) {
+    const left = await env.DB.prepare("SELECT COUNT(*) AS n FROM suggestions WHERE status = 'queued'").first<{ n: number }>()
+    if ((left?.n ?? 0) > 0) return { step: 'idle', detail: 'Scoring is paused for an hour (AI limit); the digest waits for it.' }
   }
 
   // 3. The digest, once, if today turned anything up.
