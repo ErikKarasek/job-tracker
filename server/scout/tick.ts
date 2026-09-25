@@ -9,6 +9,7 @@
 // cap, then one digest e-mail. Nothing reaches the board without Erik: scored postings wait in
 // the inbox for him to accept or dismiss.
 import { runAgent } from '../agent/run'
+import { overBudget, recordSpend } from '../ai/budget'
 import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
 import { sendDigest, sendMail } from './email'
@@ -76,6 +77,11 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   // 2. Score the next queued posting, while today's agent runs last. Pages that cannot be read
   // cost no agent run, so one tick moves past up to five of them to reach one it can score.
   const runsToday = [...done].filter((s) => s.startsWith('score:')).length
+  const budget = runsToday < DAILY_AGENT_RUNS && !done.has('quota') ? await overBudget(env.DB, 'scout') : null
+  if (budget) {
+    await mark('quota')
+    return { step: 'score', detail: budget }
+  }
   if (runsToday < DAILY_AGENT_RUNS && !done.has('quota')) {
     for (let i = 0; i < 5; i++) {
       const next = await env.DB.prepare(
@@ -204,6 +210,7 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   }
   await countRun()
   const result = await runAgent(env, { url, text: page.text })
+  await recordSpend(env.DB, 'scout', result.neurons)
   if (result.status === 'draft') {
     const d = result.draft
     await env.DB.prepare(

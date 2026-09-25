@@ -15,10 +15,12 @@ export function Inbox() {
   const [error, setError] = useState<string | null>(null)
   const [running, setRunning] = useState<string | null>(null)
   const [lastRun, setLastRun] = useState<string | null>(null)
+  const [spend, setSpend] = useState<{ total: number; byFeature: Record<string, number> } | null>(null)
 
   const load = useCallback(async () => {
     try {
-      const data = await api.suggestions()
+      const [data, spent] = await Promise.all([api.suggestions(), api.aiSpend().catch(() => null)])
+      setSpend(spent)
       setItems(data.suggestions)
       setQueued(data.queued)
       setError(null)
@@ -79,6 +81,15 @@ export function Inbox() {
           <p className="text-sm text-mute">
             {loading ? 'Loading…' : `${items.length} to review${queued ? `, ${queued} waiting to be scored` : ''}. The scout searches Jobs.cz every morning.`}
           </p>
+          {spend && (
+            <p className="font-mono text-xs text-mute" title="Workers AI neurons spent today (UTC day); 10 000 a day are included in the plan">
+              AI today: {spend.total.toLocaleString('cs-CZ')} neurons
+              {Object.keys(spend.byFeature).length > 0 &&
+                ` (${Object.entries(spend.byFeature)
+                  .map(([f, n]) => `${f} ${n.toLocaleString('cs-CZ')}`)
+                  .join(', ')})`}
+            </p>
+          )}
         </div>
         <button
           type="button"

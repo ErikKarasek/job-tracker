@@ -17,6 +17,7 @@ import { fetchJobPosting } from './agent/tools'
 import { PHONE, cv } from './cv/content'
 import { tailorCv, type Tailoring } from './cv/tailor'
 import { getBrief, startBrief } from './interview/brief'
+import { overBudget, recordSpend, spentToday } from './ai/budget'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -62,7 +63,7 @@ app.patch('/api/applications/:id', requireAdmin, async (c) => {
   const updated = await updateApplication(c.env.DB, c.req.param('id'), patch)
   if (!updated) return c.json({ error: 'not found' }, 404)
   // Reaching Interview starts the prep brief in the background, once per card.
-  if (patch.stage === 'interview' && c.env.AI && !(await getBrief(c.env.DB, updated.id))) {
+  if (patch.stage === 'interview' && c.env.AI && !(await getBrief(c.env.DB, updated.id)) && !(await overBudget(c.env.DB, 'brief'))) {
     const work = await startBrief({ ...c.env, AI: c.env.AI }, updated.id)
     if (work) c.executionCtx.waitUntil(work)
   }
@@ -85,7 +86,11 @@ app.post('/api/agent/draft', requireAdmin, async (c) => {
   if (url && !/^https?:\/\//i.test(url)) return c.json({ error: 'That is not an http(s) URL.' }, 400)
   const ai = c.env.AI
   if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
-  return c.json(await runAgent({ ...c.env, AI: ai }, { url, text }))
+  const over = await overBudget(c.env.DB, 'agent')
+  if (over) return c.json({ error: over }, 429)
+  const result = await runAgent({ ...c.env, AI: ai }, { url, text })
+  await recordSpend(c.env.DB, 'agent', result.neurons)
+  return c.json(result)
 })
 
 // The scout's inbox. Behind the key even for reading: it holds cover letters, and the board's
@@ -168,8 +173,11 @@ app.post('/api/applications/:id/cv', requireAdmin, async (c) => {
     posting = page.text
   }
 
+  const over = await overBudget(c.env.DB, 'cv')
+  if (over) return c.json({ error: over }, 429)
   try {
     const { tailoring, neurons } = await tailorCv(ai, posting)
+    await recordSpend(c.env.DB, 'cv', neurons)
     console.log(`[cv] tailored ${id}: ${neurons} neurons`)
     await c.env.DB.prepare(
       `INSERT INTO cv_tailoring (application_id, data, created_at) VALUES (?, ?, ?)
@@ -193,12 +201,17 @@ app.get('/api/applications/:id/brief', requireAdmin, async (c) => {
 app.post('/api/applications/:id/brief', requireAdmin, async (c) => {
   const ai = c.env.AI
   if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
+  const over = await overBudget(c.env.DB, 'brief')
+  if (over) return c.json({ error: over }, 429)
   const body = await c.req.json<{ text?: string }>().catch(() => ({}) as { text?: string })
   const work = await startBrief({ ...c.env, AI: ai }, c.req.param('id'), body.text?.trim() || undefined)
   if (!work) return c.json({ error: 'The card needs a posting URL first.' }, 400)
   c.executionCtx.waitUntil(work)
   return c.json({ status: 'writing' }, 202)
 })
+
+// What the AI features spent today, shown in the Inbox so the budget is never a surprise.
+app.get('/api/ai/spend', requireAdmin, async (c) => c.json(await spentToday(c.env.DB)))
 
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))
 

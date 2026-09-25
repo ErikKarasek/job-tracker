@@ -2,6 +2,7 @@
 // written in the background (waitUntil) and the UI polls; moving a card to Interview starts one.
 import type { Env } from '../types'
 import { writeBrief, type Brief } from './agent'
+import { recordSpend } from '../ai/budget'
 
 export type BriefRow = { status: 'writing' | 'ready' | 'failed'; brief: Brief | null; error: string | null; createdAt: string }
 
@@ -29,6 +30,7 @@ export async function startBrief(env: Env & { AI: Ai }, id: string, text?: strin
   return (async () => {
     try {
       const { brief, neurons } = await writeBrief(env.AI, card.company, card.job_url!, text)
+      await recordSpend(env.DB, 'brief', neurons)
       console.log(`[brief] ${id}: ready, ${brief.sources.length} pages, ${neurons} neurons`)
       await env.DB.prepare("UPDATE interview_briefs SET status = 'ready', data = ?, error = NULL WHERE application_id = ?")
         .bind(JSON.stringify(brief), id)

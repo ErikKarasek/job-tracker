@@ -49,6 +49,7 @@ export const api = {
   getBrief: (id: string) => request<BriefResponse>(`/applications/${id}/brief`),
   writeBrief: (id: string, text?: string) =>
     request<{ status: 'writing' }>(`/applications/${id}/brief`, { method: 'POST', body: JSON.stringify({ text }) }),
+  aiSpend: () => request<{ total: number; byFeature: Record<string, number> }>('/ai/spend'),
   statsSummary: () => request<StatsSummary>('/stats/summary'),
   statsTimeline: () => request<TimelinePoint[]>('/stats/timeline'),
   statsStale: (days = 14) => request<Application[]>(`/stats/stale?days=${days}`),
