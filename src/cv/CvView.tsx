@@ -24,7 +24,11 @@ const SHEET_CSS = `
 .cv-sheet .photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block }
 .cv-sheet .qr { margin-left: auto; flex: none; text-align: center; font-size: 7pt; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #a31515 }
 .cv-sheet .qr a { display: block; font-size: 8pt; letter-spacing: .02em; text-transform: none }
-.cv-sheet h1 { font-size: 30pt; line-height: .95; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.03em; color: #111827; text-shadow: 1.2pt 1.2pt 0 #ef4444, 2.2pt 2.2pt 0 #a31515 }
+/* The red shadow is an image rendered by the portfolio's build-cv.mjs, not a CSS text-shadow:
+   Chrome writes text-shadow into the PDF as extra copies of the name, and a résumé parser then
+   reads "ERIKKARÁSEK. ERIKKARÁSEK. ERIKKARÁSEK.". Same box as there, so the image lines up. */
+.cv-sheet h1 { display: inline-block; padding: 0 3pt 3pt 0; margin-bottom: -3pt; font-size: 30pt; line-height: .95; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.03em; color: #111827;
+  background: url(https://erikkarasek.cz/img/cv-name-shadow.png) no-repeat 0 0 / 100% 100% }
 .cv-sheet .title { margin-top: 2.5mm; font-size: 10pt; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a31515 }
 .cv-sheet .contact { margin-top: 2.5mm; font-size: 8.6pt; color: #4b5563; font-weight: 600 }
 .cv-sheet a { color: inherit; text-decoration: none }
