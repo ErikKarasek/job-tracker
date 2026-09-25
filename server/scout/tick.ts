@@ -108,7 +108,25 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     )
       .bind(`${day}T00:00:00`)
       .all<DigestRow>()
-    if (fresh.results.length === 0) return { step: 'digest', detail: 'nothing new today, no e-mail' }
+    if (fresh.results.length === 0) {
+      // Nothing scored. If that is because the allocation ran out, the morning still found
+      // postings and silence would read as "the scout is broken" — so send what is waiting,
+      // unscored, rather than nothing at all.
+      if (!done.has('quota')) return { step: 'digest', detail: 'nothing new today, no e-mail' }
+      const waiting = await env.DB.prepare(
+        "SELECT title, company, location, remote, job_url FROM suggestions WHERE status = 'queued' ORDER BY priority DESC, found_at ASC LIMIT 10",
+      ).all<{ title: string; company: string | null; location: string | null; remote: number; job_url: string }>()
+      if (waiting.results.length === 0) return { step: 'digest', detail: 'nothing queued, no e-mail' }
+      const list = waiting.results
+        .map((r) => `${r.title}\n${[r.company, r.location, r.remote ? 'z domova' : null].filter(Boolean).join(' · ')}\n${r.job_url}`)
+        .join('\n\n')
+      const sent = await sendMail(
+        env,
+        'Scout dnes nestihl hodnotit (došel denní limit AI)',
+        `Denní příděl Workers AI je vyčerpaný, takže dnešní nabídky zůstaly neohodnocené. Hodnocení pokračuje zítra.\n\nCo čeká ve frontě (nejslibnější nahoře):\n\n${list}\n\nCelá fronta je v Inboxu: https://job-tracker-10s.pages.dev\n`,
+      )
+      return { step: 'digest', detail: `unscored digest: ${sent}` }
+    }
     const sent = await sendDigest(env, fresh.results)
     return { step: 'digest', detail: sent }
   }
