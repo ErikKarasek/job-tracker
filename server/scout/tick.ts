@@ -14,6 +14,8 @@ import type { Env } from '../types'
 import { sendDigest, sendMail } from './email'
 import { parseSalary, scoreFit } from './score'
 import { draftFollowups, listFollowups } from '../followup/followup'
+import { fetchMpsv } from './mpsv'
+import { CAREER_PAGES, fetchCareerPage } from './careers'
 import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
@@ -77,6 +79,37 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
           return { step: 'search', detail: `${source.label} (${place}) page ${page} failed: ${String(err)}` }
         }
       }
+    }
+  }
+
+  // 1b. The Labour Office's vacancies from yesterday (its daily file appears in the evening).
+  const yesterday = new Date(Date.now() - 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
+  const mpsvStep = `search:mpsv:${yesterday}`
+  if (!done.has(mpsvStep)) {
+    await mark(mpsvStep)
+    try {
+      const found = await fetchMpsv(yesterday)
+      const added = await insertFound(
+        env,
+        found.map((f) => ({ ...f, query: 'Úřad práce' })),
+      )
+      return { step: 'search', detail: `Úřad práce ${yesterday}: ${found.length} IT vacancies, ${added} new` }
+    } catch (err) {
+      return { step: 'search', detail: `Úřad práce ${yesterday} failed: ${String(err)}` }
+    }
+  }
+
+  // 1c. Careers pages of employers nearby, each read once a day.
+  for (const page of CAREER_PAGES) {
+    const step = `search:career:${page.key}`
+    if (done.has(step)) continue
+    await mark(step)
+    try {
+      const found = await fetchCareerPage(page)
+      const added = await insertFound(env, found.map((f) => ({ ...f, query: `Kariéra: ${page.company}` })))
+      return { step: 'search', detail: `${page.company} careers: ${found.length} postings, ${added} new` }
+    } catch (err) {
+      return { step: 'search', detail: `${page.company} careers failed: ${String(err)}` }
     }
   }
 
@@ -199,15 +232,34 @@ async function search(env: Env, source: Source, place: Place, page: number) {
   })
   if (!res.ok) throw new Error(`Jobs.cz search answered HTTP ${res.status}`)
   const found = parseResults(await res.text(), place)
-  const now = new Date().toISOString()
+  const added = await insertFound(env, found.map((f) => ({ ...f, query: source.label })))
+  return { cards: found.length, added }
+}
 
+type Candidate = {
+  url: string
+  title: string
+  company: string | null
+  location: string | null
+  remote: boolean
+  query: string
+  salaryMin?: number | null
+  salaryMax?: number | null
+  /** The posting itself, when the source hands it over (the Labour Office); scored from this. */
+  text?: string
+}
+
+/** Queues what a source found, minus what is on the board or already suggested. Returns how many. */
+async function insertFound(env: Env, found: Candidate[]) {
+  const now = new Date().toISOString()
   // Already on the board, by URL: nothing to suggest.
   const onBoard = new Set(
     (await env.DB.prepare('SELECT job_url FROM applications WHERE job_url IS NOT NULL').all<{ job_url: string }>()).results.map((r) =>
       r.job_url,
     ),
   )
-  // Companies repost the same role under a new id; one suggestion per title and company is enough.
+  // Companies repost the same role under a new id, and post it on both sources; one suggestion
+  // per title and company is enough.
   const known = new Set(
     (await env.DB.prepare(`SELECT lower(title) || ' | ' || lower(coalesce(company, '')) AS k FROM suggestions`).all<{ k: string }>()).results.map(
       (r) => r.k,
@@ -223,13 +275,26 @@ async function search(env: Env, source: Source, place: Place, page: number) {
     })
     .map((f) =>
       env.DB.prepare(
-        `INSERT OR IGNORE INTO suggestions (id, job_url, title, company, location, remote, query, status, priority, found_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(crypto.randomUUID(), f.url, f.title, f.company, f.location, f.remote ? 1 : 0, source.label, ...triaged(f.title), now),
+        `INSERT OR IGNORE INTO suggestions (id, job_url, title, company, location, remote, query, status, priority, salary_min, salary_max, posting_text, found_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        crypto.randomUUID(),
+        f.url,
+        f.title,
+        f.company,
+        f.location,
+        f.remote ? 1 : 0,
+        f.query,
+        ...triaged(f.title),
+        f.salaryMin ?? null,
+        f.salaryMax ?? null,
+        f.text ?? null,
+        now,
+      ),
     )
-  if (inserts.length === 0) return { cards: found.length, added: 0 }
+  if (inserts.length === 0) return 0
   const results = await env.DB.batch(inserts)
-  return { cards: found.length, added: results.reduce((n, r) => n + (r.meta.changes ?? 0), 0) }
+  return results.reduce((n, r) => n + (r.meta.changes ?? 0), 0)
 }
 
 function triaged(title: string): [string, number] {
@@ -240,9 +305,11 @@ function triaged(title: string): [string, number] {
 /** Returns whether the agent ran; `countRun` is called just before it does. */
 async function score(env: ScoutEnv, id: string, url: string, countRun: () => Promise<unknown>): Promise<boolean> {
   const now = new Date().toISOString()
-  // Read the page before involving the model: half the postings in testing were company pages
-  // drawn with JavaScript, and asking the agent to find that out cost a turn each time.
-  const page = await fetchJobPosting({ url })
+  // A source that handed the posting over (the Labour Office) is scored from that text.
+  const held = await env.DB.prepare('SELECT posting_text FROM suggestions WHERE id = ?').bind(id).first<{ posting_text: string | null }>()
+  // Otherwise read the page before involving the model: half the postings in testing were company
+  // pages drawn with JavaScript, and asking the agent to find that out cost a turn each time.
+  const page = held?.posting_text ? { ok: true as const, text: held.posting_text } : await fetchJobPosting({ url })
   if (!page.ok) {
     await env.DB.prepare(`UPDATE suggestions SET status = 'new', fit_summary = ?, scored_at = ? WHERE id = ?`)
       .bind('Not scored: the posting page cannot be read automatically. Open it to judge it yourself.', now, id)
@@ -257,7 +324,8 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   await recordSpend(env.DB, 'scout', neurons)
   const salary = parseSalary(page.text)
   await env.DB.prepare(
-    `UPDATE suggestions SET status = 'new', fit_score = ?, fit_summary = ?, salary_min = ?, salary_max = ?, scored_at = ? WHERE id = ?`,
+    // coalesce: a salary the source gave as a number (the Labour Office) is kept, not blanked.
+    `UPDATE suggestions SET status = 'new', fit_score = ?, fit_summary = ?, salary_min = coalesce(?, salary_min), salary_max = coalesce(?, salary_max), scored_at = ? WHERE id = ?`,
   )
     .bind(fitScore, fitSummary, salary.min, salary.max, now, id)
     .run()
