@@ -1,6 +1,7 @@
 import type { Cv } from '../../server/cv/content'
 import type { Tailoring } from '../../server/cv/tailor'
 import type { BriefRow } from '../../server/interview/brief'
+import type { FollowupRow } from '../../server/followup/followup'
 import type { AgentResult, Application, ApplicationInput, StatsSummary, Suggestion, TickResult, TimelinePoint } from '../types'
 import { readAdminKey } from './admin-key'
 
@@ -28,6 +29,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 /** `status: null` means no brief has been written for the card yet. */
 export type BriefResponse = Omit<BriefRow, 'status'> & { status: BriefRow['status'] | null }
 
+export type Followup = FollowupRow
+
 export type CvResponse = { tailoring: Tailoring | null; cv: Cv; phone: string }
 
 export const api = {
@@ -51,6 +54,9 @@ export const api = {
   writeBrief: (id: string, text?: string) =>
     request<{ status: 'writing' }>(`/applications/${id}/brief`, { method: 'POST', body: JSON.stringify({ text }) }),
   aiSpend: () => request<{ total: number; byFeature: Record<string, number> }>('/ai/spend'),
+  followups: () => request<Followup[]>('/followups'),
+  decideFollowup: (id: string, kind: Followup['kind'], action: 'sent' | 'dismissed') =>
+    request<void>(`/followups/${id}/${kind}/${action}`, { method: 'POST' }),
   statsSummary: () => request<StatsSummary>('/stats/summary'),
   statsTimeline: () => request<TimelinePoint[]>('/stats/timeline'),
   statsStale: (days = 14) => request<Application[]>(`/stats/stale?days=${days}`),

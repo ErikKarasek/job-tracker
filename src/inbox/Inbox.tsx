@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api-client'
 import { formatSalary } from '../lib/dates'
 import type { Suggestion } from '../types'
+import { Followups } from './Followups'
 
 /**
  * What the scout found (server/scout/): postings from Jobs.cz, scored by the agent, best fit
@@ -109,6 +110,8 @@ export function Inbox() {
           {error}
         </p>
       )}
+
+      <Followups />
 
       <ul className="flex flex-col gap-3">
         {items.map((s) => (

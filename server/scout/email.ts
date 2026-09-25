@@ -5,7 +5,8 @@ import type { DigestRow, ScoutEnv } from './tick'
 const FROM = 'Job Scout <scout@erikkarasek.cz>'
 const BOARD = 'https://job-tracker-10s.pages.dev'
 
-export async function sendDigest(env: ScoutEnv, rows: DigestRow[]): Promise<string> {
+/** `extra` is appended as is: the follow-up drafts written this morning, when there are any. */
+export async function sendDigest(env: ScoutEnv, rows: DigestRow[], extra = ''): Promise<string> {
   if (!env.RESEND_API_KEY || !env.NOTIFY_EMAIL) return `${rows.length} new, but no e-mail: RESEND_API_KEY or NOTIFY_EMAIL is not set`
 
   const scored = rows.filter((r) => r.fit_score != null)
@@ -19,7 +20,7 @@ export async function sendDigest(env: ScoutEnv, rows: DigestRow[]): Promise<stri
     const score = r.fit_score != null ? `[${r.fit_score}] ` : '[?] '
     return `${score}${r.title}\n${where}\n${r.fit_summary ?? ''}\n${r.job_url}`
   }
-  const text = `Scout dnes našel tyto pozice (seřazené podle shody):\n\n${rows.map(line).join('\n\n')}\n\nPřijmout nebo zahodit je můžeš v Inboxu: ${BOARD}\n`
+  const text = `Scout dnes našel tyto pozice (seřazené podle shody):\n\n${rows.map(line).join('\n\n')}\n\nPřijmout nebo zahodit je můžeš v Inboxu: ${BOARD}\n${extra}`
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',

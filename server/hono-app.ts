@@ -18,6 +18,7 @@ import { PHONE, cv } from './cv/content'
 import { tailorCv, type Tailoring } from './cv/tailor'
 import { getBrief, startBrief } from './interview/brief'
 import { overBudget, recordSpend, spentToday } from './ai/budget'
+import { listFollowups } from './followup/followup'
 
 export const app = new Hono<{ Bindings: Env }>()
 
@@ -230,6 +231,22 @@ app.post('/api/applications/:id/brief', requireAdmin, async (c) => {
 
 // What the AI features spent today, shown in the Inbox so the budget is never a surprise.
 app.get('/api/ai/spend', requireAdmin, async (c) => c.json(await spentToday(c.env.DB)))
+
+// Follow-up drafts (server/followup/). Marking one sent also counts as activity on the card, so
+// its "quiet for N days" badge resets; dismissing just drops the draft.
+app.get('/api/followups', requireAdmin, async (c) => c.json(await listFollowups(c.env.DB)))
+
+app.post('/api/followups/:id/:kind/:action', requireAdmin, async (c) => {
+  const { id, kind, action } = c.req.param()
+  if (!['applied', 'interview'].includes(kind) || !['sent', 'dismissed'].includes(action)) return c.json({ error: 'bad request' }, 400)
+  const r = await c.env.DB.prepare("UPDATE followups SET status = ? WHERE application_id = ? AND kind = ? AND status = 'new'").bind(action, id, kind).run()
+  if (!r.meta.changes) return c.json({ error: 'not found' }, 404)
+  if (action === 'sent') {
+    const now = new Date().toISOString()
+    await c.env.DB.prepare('UPDATE applications SET last_activity_at = ?, updated_at = ? WHERE id = ?').bind(now, now, id).run()
+  }
+  return c.body(null, 204)
+})
 
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))
 

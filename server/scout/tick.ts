@@ -13,6 +13,7 @@ import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
 import { sendDigest, sendMail } from './email'
 import { parseSalary, scoreFit } from './score'
+import { draftFollowups, listFollowups } from '../followup/followup'
 import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
@@ -20,7 +21,7 @@ import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage,
 // plan includes. The cap is for the queue's first days, when it holds a hundred and more.
 const DAILY_AGENT_RUNS = 30
 
-export type TickResult = { step: 'remind' | 'search' | 'score' | 'digest' | 'idle'; detail: string }
+export type TickResult = { step: 'remind' | 'search' | 'score' | 'followup' | 'digest' | 'idle'; detail: string }
 export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string }
 
 /** Prague-local calendar day, so "today" turns over at midnight here, not in UTC. */
@@ -127,9 +128,25 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     if ((left?.n ?? 0) > 0) return { step: 'idle', detail: 'Scoring is paused for an hour (AI limit); the digest waits for it.' }
   }
 
+  // 2b. Follow-ups for applications gone quiet, drafted once a day before the digest so it can
+  // carry them. Cheap (a short note each), and skipped while the AI is paused.
+  if (!done.has('followups') && !paused && !(await overBudget(env.DB, 'followup'))) {
+    await mark('followups')
+    try {
+      const n = await draftFollowups(env)
+      return { step: 'followup', detail: `${n} follow-up draft${n === 1 ? '' : 's'} written` }
+    } catch (err) {
+      return { step: 'followup', detail: `follow-ups failed: ${String(err)}` }
+    }
+  }
+
   // 3. The digest, once, if today turned anything up.
   if (!done.has('digest')) {
     await mark('digest')
+    const followups = (await listFollowups(env.DB)).filter((f) => f.createdAt >= `${day}T00:00:00`)
+    const followupText = followups.length
+      ? `\nPŘIPOMEŇ SE (návrhy zpráv jsou v Inboxu, pošli je sám):\n${followups.map((f) => `- ${f.role}, ${f.company}${f.kind === 'interview' ? ' (po pohovoru)' : ''}`).join('\n')}\n`
+      : ''
     const fresh = await env.DB.prepare(
       "SELECT title, company, location, remote, job_url, fit_score, fit_summary FROM suggestions WHERE status = 'new' AND scored_at >= ? ORDER BY fit_score DESC",
     )
@@ -139,7 +156,11 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
       // Nothing scored. If that is because the allocation ran out, the morning still found
       // postings and silence would read as "the scout is broken" — so send what is waiting,
       // unscored, rather than nothing at all.
-      if (!done.has('quota')) return { step: 'digest', detail: 'nothing new today, no e-mail' }
+      if (!done.has('quota')) {
+        if (!followupText) return { step: 'digest', detail: 'nothing new today, no e-mail' }
+        const sent = await sendMail(env, `Připomeň se u ${followups.length} ${followups.length === 1 ? 'přihlášky' : 'přihlášek'}`, `${followupText}\nInbox: https://job-tracker-10s.pages.dev\n`)
+        return { step: 'digest', detail: `follow-ups only: ${sent}` }
+      }
       const waiting = await env.DB.prepare(
         "SELECT title, company, location, remote, job_url FROM suggestions WHERE status = 'queued' ORDER BY priority DESC, found_at ASC LIMIT 10",
       ).all<{ title: string; company: string | null; location: string | null; remote: number; job_url: string }>()
@@ -154,7 +175,7 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
       )
       return { step: 'digest', detail: `unscored digest: ${sent}` }
     }
-    const sent = await sendDigest(env, fresh.results)
+    const sent = await sendDigest(env, fresh.results, followupText)
     return { step: 'digest', detail: sent }
   }
 
