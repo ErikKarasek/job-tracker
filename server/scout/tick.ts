@@ -12,7 +12,7 @@ import { overBudget, recordSpend } from '../ai/budget'
 import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
 import { sendDigest, sendMail } from './email'
-import { parseSalary, scoreFit } from './score'
+import { PRECISE_FROM, parseSalary, scoreFit } from './score'
 import { draftFollowups, listFollowups } from '../followup/followup'
 import { fetchMpsv } from './mpsv'
 import { CAREER_PAGES, fetchCareerPage } from './careers'
@@ -320,7 +320,14 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   await countRun()
   // A small model judges the fit; code reads the salary (see score.ts for why). The cover
   // letter is written with the better model only when Erik opens the suggestion and asks.
-  const { fitScore, fitSummary, neurons } = await scoreFit(env.AI, page.text)
+  let fit = await scoreFit(env.AI, page.text)
+  let neurons = fit.neurons
+  // Promising postings get the second, stricter opinion (score.ts explains the two tiers).
+  if (fit.modelScore >= PRECISE_FROM) {
+    fit = await scoreFit(env.AI, page.text, true)
+    neurons += fit.neurons
+  }
+  const { fitScore, fitSummary } = fit
   await recordSpend(env.DB, 'scout', neurons)
   const salary = parseSalary(page.text)
   await env.DB.prepare(
