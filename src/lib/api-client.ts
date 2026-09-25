@@ -41,6 +41,7 @@ export const api = {
     request<AgentResult>('/agent/draft', { method: 'POST', body: JSON.stringify(input) }),
   suggestions: () => request<{ suggestions: Suggestion[]; queued: number }>('/suggestions'),
   acceptSuggestion: (id: string) => request<Application>(`/suggestions/${id}/accept`, { method: 'POST' }),
+  writeLetter: (id: string) => request<{ coverLetter: string }>(`/suggestions/${id}/letter`, { method: 'POST' }),
   dismissSuggestion: (id: string) => request<void>(`/suggestions/${id}/dismiss`, { method: 'POST' }),
   scoutTick: () => request<TickResult>('/scout/tick', { method: 'POST' }),
   getCv: (id: string) => request<CvResponse>(`/applications/${id}/cv`),

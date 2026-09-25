@@ -129,6 +129,24 @@ app.post('/api/suggestions/:id/accept', requireAdmin, async (c) => {
   return c.json(card, 201)
 })
 
+// The cover letter for a suggestion, written on request with the better model: the scout only
+// scores (cheaply), and most suggestions are dismissed without ever needing a letter.
+app.post('/api/suggestions/:id/letter', requireAdmin, async (c) => {
+  const ai = c.env.AI
+  if (!ai) return c.json({ error: 'Workers AI is not bound on this deployment.' }, 503)
+  const row = await c.env.DB.prepare('SELECT job_url FROM suggestions WHERE id = ?').bind(c.req.param('id')).first<{ job_url: string }>()
+  if (!row) return c.json({ error: 'not found' }, 404)
+  const over = await overBudget(c.env.DB, 'agent')
+  if (over) return c.json({ error: over }, 429)
+  const page = await fetchJobPosting({ url: row.job_url })
+  if (!page.ok) return c.json({ error: 'The posting cannot be read from its link; use "From a posting" on the board with its text.' }, 422)
+  const result = await runAgent({ ...c.env, AI: ai }, { url: row.job_url, text: page.text })
+  await recordSpend(c.env.DB, 'agent', result.neurons)
+  if (result.status !== 'draft' || !result.draft.coverLetter) return c.json({ error: 'No letter came back. Try again.' }, 502)
+  await c.env.DB.prepare('UPDATE suggestions SET cover_letter = ? WHERE id = ?').bind(result.draft.coverLetter, c.req.param('id')).run()
+  return c.json({ coverLetter: result.draft.coverLetter })
+})
+
 app.post('/api/suggestions/:id/dismiss', requireAdmin, async (c) => {
   const r = await c.env.DB.prepare("UPDATE suggestions SET status = 'dismissed', decided_at = ? WHERE id = ? AND status = 'new'")
     .bind(new Date().toISOString(), c.req.param('id'))

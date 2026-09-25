@@ -4,10 +4,11 @@ name = "job-tracker-scout"
 main = "index.ts"
 compatibility_date = "2025-09-01"
 
-# Every five minutes from 05:00 to 07:55 UTC: 07:00–09:55 in Prague in summer, 06:00–08:55 in
-# winter. 36 ticks, enough for ~16 results pages, 15 agent runs and the digest.
+# Every five minutes from 05:00 to 08:55 UTC: 07:00–10:55 in Prague in summer, 06:00–09:55 in
+# winter. 48 ticks: up to ~26 results pages, then scoring three postings a tick (30 a day), then
+# the digest, usually by about half past nine.
 [triggers]
-crons = ["*/5 5-7 * * *"]
+crons = ["*/5 5-8 * * *"]
 
 [[d1_databases]]
 binding = "DB"

@@ -8,17 +8,17 @@
 // Order of work each day: every search once, then the agent on queued postings up to a daily
 // cap, then one digest e-mail. Nothing reaches the board without Erik: scored postings wait in
 // the inbox for him to accept or dismiss.
-import { runAgent } from '../agent/run'
 import { overBudget, recordSpend } from '../ai/budget'
 import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
 import { sendDigest, sendMail } from './email'
+import { parseSalary, scoreFit } from './score'
 import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
-// A run measured ~340 neurons, so fifteen take about half of the 10 000 free a day, leaving the
-// rest for the portfolio assistant and for adding postings by hand. The rest waits for tomorrow.
-const DAILY_AGENT_RUNS = 15
+// A score costs ~20 neurons (score.ts), so thirty a day is ~600, a fraction of the 10 000 the
+// plan includes. The cap is for the queue's first days, when it holds a hundred and more.
+const DAILY_AGENT_RUNS = 30
 
 export type TickResult = { step: 'remind' | 'search' | 'score' | 'digest' | 'idle'; detail: string }
 export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string }
@@ -74,8 +74,9 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     }
   }
 
-  // 2. Score the next queued posting, while today's agent runs last. Pages that cannot be read
-  // cost no agent run, so one tick moves past up to five of them to reach one it can score.
+  // 2. Score queued postings, best first, while today's runs last. A score is quick and cheap
+  // (score.ts), so one tick scores up to three; pages that cannot be read cost nothing and are
+  // moved past, up to eight postings a tick in all.
   const runsToday = [...done].filter((s) => s.startsWith('score:')).length
   const budget = runsToday < DAILY_AGENT_RUNS && !done.has('quota') ? await overBudget(env.DB, 'scout') : null
   if (budget) {
@@ -83,15 +84,15 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     return { step: 'score', detail: budget }
   }
   if (runsToday < DAILY_AGENT_RUNS && !done.has('quota')) {
-    for (let i = 0; i < 5; i++) {
+    const scored: string[] = []
+    for (let i = 0; i < 8 && scored.length < 3 && runsToday + scored.length < DAILY_AGENT_RUNS; i++) {
       const next = await env.DB.prepare(
         "SELECT id, job_url, title FROM suggestions WHERE status = 'queued' ORDER BY priority DESC, found_at ASC LIMIT 1",
       ).first<{ id: string; job_url: string; title: string }>()
       if (!next) break
       const runStep = `score:${next.id}`
       try {
-        const ranAgent = await score(env, next.id, next.job_url, () => mark(runStep))
-        if (ranAgent || i === 4) return { step: 'score', detail: next.title }
+        if (await score(env, next.id, next.job_url, () => mark(runStep))) scored.push(next.title)
       } catch (err) {
         // The day's Workers AI allocation is shared with the portfolio assistant and can run out
         // before the scout's own cap. Then stop scoring for today, and give back the run the
@@ -101,9 +102,17 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
           await mark('quota')
           return { step: 'score', detail: 'The Workers AI allocation for today is used up; scoring continues tomorrow.' }
         }
-        return { step: 'score', detail: `${next.title} failed: ${String(err)}` }
+        // Any other failure (a reply that is not the JSON asked for): put the posting in the inbox
+        // unscored, so it is neither lost nor retried on every tick.
+        await env.DB.prepare(`UPDATE suggestions SET status = 'new', fit_summary = ?, scored_at = ? WHERE id = ?`)
+          .bind(`Not scored: ${String(err).slice(0, 150)}`, new Date().toISOString(), next.id)
+          .run()
       }
     }
+    if (scored.length > 0) return { step: 'score', detail: scored.join(' · ') }
+    // Only unreadable pages this tick: carry on next tick while anything is left to score.
+    const left = await env.DB.prepare("SELECT COUNT(*) AS n FROM suggestions WHERE status = 'queued'").first<{ n: number }>()
+    if ((left?.n ?? 0) > 0) return { step: 'score', detail: 'unreadable postings moved to the inbox' }
   }
 
   // 3. The digest, once, if today turned anything up.
@@ -209,23 +218,16 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
     return false
   }
   await countRun()
-  const result = await runAgent(env, { url, text: page.text })
-  await recordSpend(env.DB, 'scout', result.neurons)
-  if (result.status === 'draft') {
-    const d = result.draft
-    await env.DB.prepare(
-      `UPDATE suggestions SET status = 'new', fit_score = ?, fit_summary = ?, cover_letter = ?, salary_min = ?, salary_max = ?,
-         company = coalesce(?, company), location = coalesce(?, location), scored_at = ? WHERE id = ?`,
-    )
-      .bind(d.fitScore, d.fitSummary, d.coverLetter, d.salaryMin, d.salaryMax, d.company, d.location, now, id)
-      .run()
-  } else {
-    // Could not be read or scored (usually a posting drawn with JavaScript). Still worth a look,
-    // so it goes to the inbox unscored rather than disappearing.
-    await env.DB.prepare(`UPDATE suggestions SET status = 'new', fit_summary = ?, scored_at = ? WHERE id = ?`)
-      .bind(`Not scored: ${result.message.slice(0, 200)}`, now, id)
-      .run()
-  }
-  console.log(`[scout] scored ${url}: ${result.status}, ${result.neurons} neurons`)
+  // A small model judges the fit; code reads the salary (see score.ts for why). The cover
+  // letter is written with the better model only when Erik opens the suggestion and asks.
+  const { fitScore, fitSummary, neurons } = await scoreFit(env.AI, page.text)
+  await recordSpend(env.DB, 'scout', neurons)
+  const salary = parseSalary(page.text)
+  await env.DB.prepare(
+    `UPDATE suggestions SET status = 'new', fit_score = ?, fit_summary = ?, salary_min = ?, salary_max = ?, scored_at = ? WHERE id = ?`,
+  )
+    .bind(fitScore, fitSummary, salary.min, salary.max, now, id)
+    .run()
+  console.log(`[scout] scored ${url}: ${fitScore}, ${neurons} neurons`)
   return true
 }

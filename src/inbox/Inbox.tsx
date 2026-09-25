@@ -122,6 +122,18 @@ export function Inbox() {
 
 function SuggestionCard({ s, onDecide }: { s: Suggestion; onDecide: (id: string, action: 'accept' | 'dismiss') => void }) {
   const [copied, setCopied] = useState(false)
+  // The scout only scores; a letter is written with the better model when asked for here.
+  const [letter, setLetter] = useState(s.coverLetter)
+  const [writing, setWriting] = useState<string | null>(null)
+  async function writeLetter() {
+    setWriting('Writing… (10–20 s)')
+    try {
+      setLetter((await api.writeLetter(s.id)).coverLetter)
+      setWriting(null)
+    } catch (err) {
+      setWriting(err instanceof Error ? err.message : String(err))
+    }
+  }
   const salary = formatSalary(s.salaryMin, s.salaryMax)
   const tone =
     s.fitScore == null ? 'text-mute' : s.fitScore >= 75 ? 'text-stage-offer' : s.fitScore >= 50 ? 'text-stage-interview' : 'text-stage-rejected'
@@ -140,20 +152,31 @@ function SuggestionCard({ s, onDecide }: { s: Suggestion; onDecide: (id: string,
           </p>
         </div>
         {s.fitSummary && <p className="text-sm text-ink-2">{s.fitSummary}</p>}
-        {s.coverLetter && (
+        {letter && (
           <details className="text-sm">
             <summary className="cursor-pointer select-none text-mute">Cover letter draft (check it before sending)</summary>
-            <p className="mt-2 whitespace-pre-line rounded-md border border-line-soft bg-bg p-3 text-ink-2">{s.coverLetter}</p>
+            <p className="mt-2 whitespace-pre-line rounded-md border border-line-soft bg-bg p-3 text-ink-2">{letter}</p>
             <button
               type="button"
-              onClick={() => void navigator.clipboard.writeText(s.coverLetter ?? '').then(() => setCopied(true))}
+              onClick={() => void navigator.clipboard.writeText(letter ?? '').then(() => setCopied(true))}
               className="mt-2 rounded-md border border-line px-2 py-0.5 text-xs text-mute hover:text-ink"
             >
               {copied ? 'Copied' : 'Copy'}
             </button>
           </details>
         )}
+        {writing && <p className="text-xs text-mute">{writing}</p>}
         <div className="flex gap-2">
+          {!letter && s.fitScore != null && (
+            <button
+              type="button"
+              onClick={() => void writeLetter()}
+              disabled={writing?.startsWith('Writing') ?? false}
+              className="rounded-md border border-signal/60 px-3 py-1.5 text-sm text-signal hover:bg-signal/10 disabled:opacity-50"
+            >
+              Write cover letter
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onDecide(s.id, 'accept')}

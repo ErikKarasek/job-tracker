@@ -63,6 +63,9 @@ export function htmlToText(html: string) {
     .replace(/<br\s*\/?>|<\/(p|div|li|h[1-6])>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
+    // Jobs.cz writes "30 000 &zwj;–&zwj; 40 000 Kč"; the joiners are invisible and only get in
+    // the way of reading the figures.
+    .replace(/&zwj;|&zwnj;|\u200d|\u200c/g, '')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
