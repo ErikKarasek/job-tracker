@@ -34,7 +34,7 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      'IT profesionál, kterého nejvíc baví tvořit, od webových aplikací po automatizace, a naplno u toho využívat umělou inteligenci. Aktuálně pracuji jako analytik / tester na mezinárodním projektu ENTSO-E Transparency Platform ve společnosti Unicorn. AI je pro mě hlavní téma: aktivně sleduji její vývoj a používám ji při kódování, debuggingu i učení nových technologií. Mám zázemí v IT podpoře (helpdesk L1, Active Directory, vzdálená správa) a hledám roli, kde spojím techniku, vývoj a AI.',
+      'Junior vývojář, který staví aplikace a AI automatizace od nápadu po nasazení. Ve vlastních projektech jsem postavil AI agenty na Cloudflare Workers AI, kteří každé ráno sami procházejí nabídky práce, hodnotí je a připravují podklady, a cross-platform aplikaci Nexus Grind pro desktop i mobil (React, TypeScript, Tauri, React Native, Supabase). AI používám denně při vývoji a její výstupy ověřuji kódem, ne slepou důvěrou. Aktuálně pracuji jako analytik / tester na projektu ENTSO-E Transparency Platform ve společnosti Unicorn a mám zázemí v IT podpoře (helpdesk L1, Active Directory). Hledám roli v AI automatizaci nebo vývoji.',
     strengths: [
       ['Rychlé učení a samostatnost', 'v nových technologiích a procesech se zorientuju rychle.'],
       ['AI-first přístup', 'běžně využívám AI k rychlejšímu a kvalitnějšímu vývoji.'],
@@ -191,7 +191,7 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      "An IT professional who loves building things, from web apps to automations, and making full use of AI while doing it. I currently work as an analyst / tester on the international ENTSO-E Transparency Platform project at Unicorn. AI is my main interest: I follow where it's heading and use it for coding, debugging and learning new technologies. I have a background in IT support (L1 helpdesk, Active Directory, remote administration) and I'm looking for a role that brings together tech, development and AI.",
+      "A junior developer who builds applications and AI automations from idea to deployment. In my own projects I have built AI agents on Cloudflare Workers AI that go through job postings every morning on their own, score them and prepare the paperwork, and Nexus Grind, a cross-platform app for desktop and mobile (React, TypeScript, Tauri, React Native, Supabase). I use AI every day while building, and I check its output with code rather than trusting it blindly. I currently work as an analyst / tester on the ENTSO-E Transparency Platform project at Unicorn, with a background in IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
     strengths: [
       ['Fast learner, self-driven', 'I find my way around new technologies and processes quickly.'],
       ['AI-first', 'I use AI every day to build faster and better.'],
