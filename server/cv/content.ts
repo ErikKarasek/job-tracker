@@ -19,9 +19,9 @@ export const cv = {
   cs: {
     ...shared,
     file: 'erik-karasek-zivotopis.pdf',
-    title: 'Analytik / Tester · Vývoj & AI · IT podpora',
+    title: 'Junior vývojář · AI automatizace · IT podpora',
     city: 'Hradec Králové',
-    studyLabel: 'Případová studie',
+    studyLabel: 'Víc o projektu',
     labels: {
       profile: 'Profil',
       experience: 'Pracovní zkušenosti',
@@ -176,9 +176,9 @@ export const cv = {
     ...shared,
     tech: shared.tech.map((t) => (t === 'AI nástroje' ? 'AI tools' : t)),
     file: 'erik-karasek-resume.pdf',
-    title: 'Analyst / Tester · Development & AI · IT Support',
+    title: 'Junior Developer · AI Automation · IT Support',
     city: 'Hradec Králové, CZ',
-    studyLabel: 'Case study',
+    studyLabel: 'More about it',
     labels: {
       profile: 'Profile',
       experience: 'Experience',
