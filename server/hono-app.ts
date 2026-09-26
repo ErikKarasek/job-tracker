@@ -101,7 +101,7 @@ app.get('/api/suggestions', requireAdmin, async (c) => {
     `SELECT id, job_url AS jobUrl, title, company, location, remote, query, fit_score AS fitScore,
             fit_summary AS fitSummary, cover_letter AS coverLetter, salary_min AS salaryMin,
             salary_max AS salaryMax, found_at AS foundAt, scored_at AS scoredAt
-     FROM suggestions WHERE status = 'new' ORDER BY fit_score IS NULL, fit_score DESC, found_at DESC`,
+     FROM suggestions WHERE status = 'new' ORDER BY priority = 0, fit_score IS NULL, fit_score DESC, found_at DESC`,
   ).all()
   const queued = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM suggestions WHERE status = 'queued'").first<{ n: number }>()
   return c.json({ suggestions: results, queued: queued?.n ?? 0 })

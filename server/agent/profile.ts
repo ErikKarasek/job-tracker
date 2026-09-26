@@ -21,4 +21,4 @@ Key technologies: ${en.tech.join(', ')}
 Education: ${en.education.map((e) => `${e.what}, ${e.where} (${e.when})`).join('; ')}
 ${en.other.map(([k, v]) => `${k}: ${v}`).join('. ')}
 
-Looking for: junior roles in software testing / QA, IT support and administration, or junior development and AI automation, around Hradec Králové or remote.`
+Looking for (in this order): AI automation and AI agents; junior web or full-stack development; IT support and administration; implementing or supporting information systems. Around Hradec Králové or remote. He no longer wants software-testing or data-analyst roles, although he has done testing.`

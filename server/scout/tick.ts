@@ -181,7 +181,7 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
       ? `\nPŘIPOMEŇ SE (návrhy zpráv jsou v Inboxu, pošli je sám):\n${followups.map((f) => `- ${f.role}, ${f.company}${f.kind === 'interview' ? ' (po pohovoru)' : ''}`).join('\n')}\n`
       : ''
     const fresh = await env.DB.prepare(
-      "SELECT title, company, location, remote, job_url, fit_score, fit_summary FROM suggestions WHERE status = 'new' AND scored_at >= ? ORDER BY fit_score DESC",
+      "SELECT title, company, location, remote, job_url, fit_score, fit_summary FROM suggestions WHERE status = 'new' AND scored_at >= ? ORDER BY priority = 0, fit_score DESC",
     )
       .bind(`${day}T00:00:00`)
       .all<DigestRow>()
