@@ -302,6 +302,16 @@ function triaged(title: string): [string, number] {
   return [t.skip ? 'skipped' : 'queued', t.priority]
 }
 
+// Share of postings the small model rates below PRECISE_FROM that Mistral scores anyway (above).
+const AUDIT_RATE = 0.1
+
+async function logAudit(env: Env, id: string, small: number, precise: number) {
+  const day = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
+  await env.DB.prepare('INSERT OR IGNORE INTO scout_log (day, step, at) VALUES (?, ?, ?)')
+    .bind(day, `audit:${id}:${small}:${precise}`, new Date().toISOString())
+    .run()
+}
+
 /** Returns whether the agent ran; `countRun` is called just before it does. */
 async function score(env: ScoutEnv, id: string, url: string, countRun: () => Promise<unknown>): Promise<boolean> {
   const now = new Date().toISOString()
@@ -322,10 +332,17 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   // letter is written with the better model only when Erik opens the suggestion and asks.
   let fit = await scoreFit(env.AI, page.text)
   let neurons = fit.neurons
-  // Promising postings get the second, stricter opinion (score.ts explains the two tiers).
-  if (fit.modelScore >= PRECISE_FROM) {
+  // Promising postings get the second, stricter opinion (score.ts explains the two tiers). A random
+  // tenth of the rest get it too: a good posting the small model underrates would otherwise never be
+  // seen by Mistral, and nobody would know. Those checks are logged (audit:<id>:<small>:<mistral>)
+  // to measure how often that happens, and a posting Mistral rates 65+ is rescued by its score.
+  const promising = fit.modelScore >= PRECISE_FROM
+  const audit = !promising && Math.random() < AUDIT_RATE
+  if (promising || audit) {
+    const small = fit.modelScore
     fit = await scoreFit(env.AI, page.text, true)
     neurons += fit.neurons
+    if (audit) await logAudit(env, id, small, fit.fitScore)
   }
   const { fitScore, fitSummary } = fit
   await recordSpend(env.DB, 'scout', neurons)
