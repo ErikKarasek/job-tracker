@@ -102,6 +102,31 @@ Put the admin key in `.dev.vars` (git-ignored) so local writes work:
 ADMIN_KEY=anything-you-like
 ```
 
+## Tests
+
+Two suites run against a test server (`tests/serve.sh`): a fresh build served by wrangler on
+port 8799 with its own D1 state in `.wrangler/e2e-state`, so your development data is never
+touched. The admin key there is `e2e`. No test calls Workers AI.
+
+- **API, Postman:** `tests/api/job-tracker.postman_collection.json`, 18 requests with 33
+  assertions: public reads, access control (writes and the inbox refuse a missing or wrong key),
+  the full lifecycle of an application (create, invalid input, stage moves, funnel, delete),
+  and the agent's input validation. Open it in Postman with `tests/api/local.postman_environment.json`,
+  or run it with Newman.
+- **UI, Playwright:** `tests/e2e/board.spec.ts` drives the board in Chrome: what a visitor
+  without the key sees, unlocking through the prompt, an application from wishlist to applied
+  (surviving a reload), edited and deleted, the funnel in Stats, and a wrong key being refused.
+
+```sh
+npm test            # both suites; starts and stops the test server itself
+npm run test:api    # the Postman collection only (test server must be running)
+npm run test:e2e    # Playwright only
+```
+
+Both run on every push in GitHub Actions (`.github/workflows/test.yml`). CI has no Cloudflare
+login, which the remote Workers AI binding needs to start, so the workflow drops that binding
+from `wrangler.toml` first; the routes that need it answer 503 and no test depends on them.
+
 ## Access control
 
 Reading is public — the board is linked from a portfolio case study and visitors should be

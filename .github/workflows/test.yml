@@ -1,0 +1,40 @@
+# Runs the API tests (Postman collection via Newman) and the UI tests (Playwright) on every push
+# and pull request, against the app served locally by wrangler with a fresh D1 database.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Workers AI is a remote binding that needs a Cloudflare login to start, and no test calls
+      # it, so CI serves the app without it (the routes that need it answer 503).
+      - name: Drop the Workers AI binding
+        run: sed -i '/^\[ai\]$/,/^binding = "AI"$/d' wrangler.toml
+      - run: npx playwright install --with-deps chromium
+      - name: Start the test server
+        run: |
+          sh tests/serve.sh > server.log 2>&1 &
+          for i in $(seq 1 120); do curl -sf http://localhost:8799/api/health && exit 0; sleep 1; done
+          cat server.log; exit 1
+      - name: API tests (Postman collection)
+        run: npm run test:api
+      - name: UI tests (Playwright)
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
