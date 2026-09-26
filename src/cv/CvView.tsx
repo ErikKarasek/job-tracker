@@ -17,7 +17,11 @@ const SHEET_CSS = `
   .cv-sheet [contenteditable] { outline: none !important }
 }
 .cv-sheet { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 13mm 14mm; background: #fff; color: #1f2937; box-shadow: 0 10px 40px rgba(0,0,0,.4);
-  font: 500 9.4pt/1.38 Outfit, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  font: 500 9.4pt/1.38 SpaceFromArial, Outfit, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+/* Chrome writes Outfit's text without space glyphs, so parsers guess word breaks from the gaps and
+   a narrow one read "Juniorvývojář,kterýstaví…". The space alone comes from Arial, which Chrome does
+   write; same fix as the portfolio's build-cv.mjs. */
+@font-face { font-family: SpaceFromArial; src: local('Arial'), local('Helvetica'); unicode-range: U+0020 }
 .cv-sheet * { box-sizing: border-box; margin: 0; padding: 0 }
 .cv-sheet header { display: flex; align-items: center; gap: 9mm; padding-bottom: 6mm; border-bottom: 2px solid #a31515 }
 .cv-sheet .photo { width: 34mm; height: 34mm; border-radius: 50%; border: 1.6mm solid #a31515; padding: 1mm; background: #fff; flex: none; box-shadow: 0 0 6mm rgba(163,21,21,.25) }
@@ -26,8 +30,9 @@ const SHEET_CSS = `
 .cv-sheet .qr a { display: block; font-size: 8pt; letter-spacing: .02em; text-transform: none }
 /* The red shadow is an image rendered by the portfolio's build-cv.mjs, not a CSS text-shadow:
    Chrome writes text-shadow into the PDF as extra copies of the name, and a résumé parser then
-   reads "ERIKKARÁSEK. ERIKKARÁSEK. ERIKKARÁSEK.". Same box as there, so the image lines up. */
-.cv-sheet h1 { display: inline-block; padding: 0 3pt 3pt 0; margin-bottom: -3pt; font-size: 30pt; line-height: .95; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -.03em; color: #111827;
+   reads "ERIKKARÁSEK. ERIKKARÁSEK. ERIKKARÁSEK.". Same box as there (27pt, no letter-spacing, which
+   would drop the space between the names from the PDF), so the image lines up. */
+.cv-sheet h1 { font-family: SpaceFromArial, Outfit, sans-serif; display: inline-block; padding: 0 3pt 3pt 0; margin-bottom: -3pt; font-size: 27pt; line-height: .95; font-weight: 900; font-style: italic; text-transform: uppercase; color: #111827;
   background: url(https://erikkarasek.cz/img/cv-name-shadow.png) no-repeat 0 0 / 100% 100% }
 .cv-sheet .title { margin-top: 2.5mm; font-size: 10pt; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a31515 }
 .cv-sheet .contact { margin-top: 2.5mm; font-size: 8.6pt; color: #4b5563; font-weight: 600 }
