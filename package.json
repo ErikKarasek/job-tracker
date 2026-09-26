@@ -14,6 +14,7 @@
     "deploy:scout": "npx --yes wrangler@4 deploy -c scout/wrangler.toml",
     "cv:sync": "node scripts/sync-cv.mjs",
     "test": "sh tests/run-all.sh",
+    "test:unit": "node --test 'tests/unit/*.test.ts'",
     "test:api": "newman run tests/api/job-tracker.postman_collection.json -e tests/api/local.postman_environment.json",
     "test:e2e": "playwright test"
   },

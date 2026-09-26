@@ -17,5 +17,6 @@ if ! curl -sf "$URL" >/dev/null; then
     sleep 1
   done
 fi
+node --test 'tests/unit/*.test.ts'
 npx newman run tests/api/job-tracker.postman_collection.json -e tests/api/local.postman_environment.json
 npx playwright test

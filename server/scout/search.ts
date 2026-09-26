@@ -34,7 +34,9 @@ export function searchUrl(source: Source, place: Place, page: number) {
 export type Found = { url: string; title: string; company: string | null; location: string | null; remote: boolean }
 
 // A junior would not get these, and each would cost an agent run to find that out.
-const TOO_SENIOR = /\b(senior|sr\.|lead|head|vedouc[ií]|manaž|manager|architekt|principal|expert)\b/i
+// \b in a JS regex only knows ASCII letters, so it never matched after the í of "vedoucí";
+// letter lookarounds with the u flag do. "manaž" stays a prefix (manažer, manažerka).
+const TOO_SENIOR = /(?<!\p{L})(senior|sr\.|lead|head|vedouc[ií]|manaž\p{L}*|manager|architekt|principal|expert)(?!\p{L})/iu
 // Even the IT fields carry some work that is not software: factory quality, sales, purchasing.
 // Dropped before any agent run is spent on them, unless the title is plainly IT work anyway
 // ("Inženýr SW kvality", "Junior ERP specialista pro výrobu").
@@ -44,7 +46,9 @@ const PLAINLY_IT = /(\bSW\b|software|\bIT\b|\bIS\b|ICT|ERP|SAP|junior|tester|vý
 // junior development, IT support and administration, and implementing information systems; any
 // other IT after those. Testing and analyst roles he no longer wants, but they stay as a fallback,
 // scored last. The queue is ordered by these priorities (3, 2, 1, 0).
-const AI_WORK = /(\bAI\b|umělá inteligence|umělou inteligenc|artificial intelligence|machine learning|\bML\b|\bLLM|\bGPT|automatiza|automation|\bRPA\b|n8n|zapier|make\.com|chatbot|agent)/i
+// Not a bare "agent": "Support Agent" and "Service Desk Agent" are helpdesk titles. An AI agent
+// role says AI anyway, or "agentic" / "agentní".
+const AI_WORK = /(\bAI\b|umělá inteligence|umělou inteligenc|artificial intelligence|machine learning|\bML\b|\bLLM|\bGPT|automatiza|automation|\bRPA\b|n8n|zapier|make\.com|chatbot|agentic|agentn[ií])/i
 // "Junior" alone says the level, not the work, so it is kept apart: it lifts an IT title but does
 // not rescue a testing one ("Junior Tester" stays a fallback).
 const JUNIOR = /(junior|absolvent|trainee)/i
