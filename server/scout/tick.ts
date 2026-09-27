@@ -24,7 +24,7 @@ import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage,
 const DAILY_AGENT_RUNS = 30
 
 export type TickResult = { step: 'remind' | 'search' | 'score' | 'followup' | 'digest' | 'idle'; detail: string }
-export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string }
+export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string; DIGEST_EMAIL?: string }
 
 /** Prague-local calendar day, so "today" turns over at midnight here, not in UTC. */
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
@@ -176,6 +176,9 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   // 3. The digest, once, if today turned anything up.
   if (!done.has('digest')) {
     await mark('digest')
+    // The same news (and the quota note) arrives at 10:00 as the Telegram digest from job-mail.
+    // Interview briefs (step 0) still go by e-mail.
+    if (env.DIGEST_EMAIL === 'off') return { step: 'digest', detail: 'digest e-mail off, Telegram digest instead' }
     const followups = (await listFollowups(env.DB)).filter((f) => f.createdAt >= `${day}T00:00:00`)
     const followupText = followups.length
       ? `\nPŘIPOMEŇ SE (návrhy zpráv jsou v Inboxu, pošli je sám):\n${followups.map((f) => `- ${f.role}, ${f.company}${f.kind === 'interview' ? ' (po pohovoru)' : ''}`).join('\n')}\n`

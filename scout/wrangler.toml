@@ -20,5 +20,8 @@ binding = "AI"
 
 [vars]
 NOTIFY_EMAIL = "erikkarasek@centrum.cz"
+# "off": no morning digest e-mail, it comes as the 10:00 Telegram digest from job-mail.
+# Interview briefs still go by e-mail. Remove the line to get the digest mail back.
+DIGEST_EMAIL = "off"
 
 # Secret, set once: npx wrangler secret put RESEND_API_KEY -c scout/wrangler.toml
