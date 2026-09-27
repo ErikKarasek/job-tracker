@@ -208,6 +208,41 @@ export async function getTimeline(db: D1Database): Promise<TimelinePoint[]> {
   return results
 }
 
+/**
+ * What happened in [from, to): how many cards reached each stage (from the event log, so a card
+ * that went applied → interview in the period counts in both), how many were created, and what
+ * the scout found and what was decided about it. Drives the weekly summary in Telegram.
+ */
+export async function getPeriodStats(db: D1Database, from: string, to: string) {
+  const [moves, created, scout] = await Promise.all([
+    db.prepare(
+      `SELECT to_stage AS stage, COUNT(*) AS n FROM status_events
+       WHERE occurred_at >= ? AND occurred_at < ? AND from_stage IS NOT NULL GROUP BY to_stage`,
+    ).bind(from, to).all<{ stage: Stage; n: number }>(),
+    db.prepare(
+      `SELECT to_stage AS stage, COUNT(*) AS n FROM status_events
+       WHERE occurred_at >= ? AND occurred_at < ? AND from_stage IS NULL GROUP BY to_stage`,
+    ).bind(from, to).all<{ stage: Stage; n: number }>(),
+    db.prepare(
+      `SELECT
+         SUM(found_at >= ?1 AND found_at < ?2) AS found,
+         SUM(status = 'accepted' AND decided_at >= ?1 AND decided_at < ?2) AS accepted,
+         SUM(status = 'dismissed' AND decided_at >= ?1 AND decided_at < ?2) AS dismissed
+       FROM suggestions`,
+    ).bind(from, to).first<{ found: number | null; accepted: number | null; dismissed: number | null }>(),
+  ])
+  // A card created straight into a stage (e.g. from a reply e-mail) reached it too.
+  const reached: Record<Stage, number> = { wishlist: 0, applied: 0, interview: 0, offer: 0, rejected: 0 }
+  for (const r of [...moves.results, ...created.results]) reached[r.stage] += r.n
+  return {
+    from,
+    to,
+    created: created.results.reduce((sum, r) => sum + r.n, 0),
+    reached,
+    scout: { found: scout?.found ?? 0, accepted: scout?.accepted ?? 0, dismissed: scout?.dismissed ?? 0 },
+  }
+}
+
 export async function getStaleApplications(db: D1Database, days: number): Promise<Application[]> {
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
   const { results } = await db

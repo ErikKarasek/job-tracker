@@ -8,6 +8,7 @@ import {
   getStaleApplications,
   getStatsSummary,
   getTimeline,
+  getPeriodStats,
   listApplications,
   updateApplication,
 } from './db'
@@ -251,6 +252,15 @@ app.post('/api/followups/:id/:kind/:action', requireAdmin, async (c) => {
 app.get('/api/stats/summary', async (c) => c.json(await getStatsSummary(c.env.DB)))
 
 app.get('/api/stats/timeline', async (c) => c.json(await getTimeline(c.env.DB)))
+
+// Counts for a period, e.g. ?from=2026-09-21T00:00:00Z&to=2026-09-28T00:00:00Z. Only numbers,
+// public like the other stats.
+app.get('/api/stats/period', async (c) => {
+  const from = c.req.query('from') ?? ''
+  const to = c.req.query('to') ?? ''
+  if (Number.isNaN(Date.parse(from)) || Number.isNaN(Date.parse(to))) return c.json({ error: 'from and to must be ISO dates' }, 400)
+  return c.json(await getPeriodStats(c.env.DB, new Date(from).toISOString(), new Date(to).toISOString()))
+})
 
 app.get('/api/stats/stale', async (c) => {
   const days = Number(c.req.query('days') ?? 14)
