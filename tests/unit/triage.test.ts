@@ -2,7 +2,7 @@
 // Run with: npm run test:unit (Node's own runner, which strips the types; no build step).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { triage } from '../../server/scout/search.ts'
+import { looksLikeIt, triage } from '../../server/scout/search.ts'
 
 const priority = (title: string) => triage(title).priority
 const skipped = (title: string) => triage(title).skip
@@ -55,6 +55,18 @@ test('senior and non-IT titles are dropped before any agent run', () => {
   assert.ok(skipped('Team Lead – backend'))
   assert.ok(!skipped('Leadership academy – junior IT'), 'lead must not match inside another word')
   assert.ok(skipped('Technik kvality ve výrobě'))
+  assert.ok(skipped('PLC programátor (m/ž)'))
+  assert.ok(skipped('Mechatronik - programátor (m/ž)'))
+  assert.ok(skipped('Programátor CNC strojů'))
+  assert.ok(skipped('TECHNIK / TECHNIČKA PRO EZS, EPS, KAMEROVÉ SYSTÉMY'))
+  assert.ok(!skipped('Programátor PHP'), 'a software programmer stays')
   // plainly IT work survives an off-topic word
   assert.ok(!skipped('Inženýr SW kvality'))
+})
+
+test('a careers page with production work keeps only titles that read as IT', () => {
+  for (const t of ['SW tester', 'SW vývojář C/C++', 'FPGA / RFSoC vývojář (VHDL, DSP)']) assert.ok(looksLikeIt(t), t)
+  for (const t of ['CNC obráběč kovů - soustružník', 'Mechanik', 'Konstruktér strojní', 'Talent Acquisition Partner']) {
+    assert.ok(!looksLikeIt(t), t)
+  }
 })

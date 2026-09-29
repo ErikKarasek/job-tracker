@@ -41,6 +41,10 @@ const TOO_SENIOR = /(?<!\p{L})(senior|sr\.|lead|head|vedouc[ií]|manaž\p{L}*|ma
 // Dropped before any agent run is spent on them, unless the title is plainly IT work anyway
 // ("Inženýr SW kvality", "Junior ERP specialista pro výrobu").
 const OFF_TOPIC = /(kvalit|výrob|strojír|stavb|účetn|obchodn|obchodník|pokladn|mistr|montáž|řidič|skladn|údržb|prodej|nákup|procurement)/i
+// Programming machines, not software: PLC and CNC, mechatronics, industrial control and security
+// systems. They sit in Jobs.cz's IT fields and say "programátor", but he has not studied any of it
+// (2026-09-29), and every one of them scored low anyway.
+const NOT_SOFTWARE = /(\bPLC\b|\bCNC\b|mechatron|\bSCADA\b|obráběc|\bEZS\b|\bEPS\b|kamerov|elektroinstal|elektrikář)/i
 const PLAINLY_IT = /(\bSW\b|software|\bIT\b|\bIS\b|ICT|ERP|SAP|junior|tester|vývojář|programátor|developer)/i
 // What Erik is after, in order (set by him on 2026-09-26): AI automation and agents first; then
 // junior development and implementing information systems; then IT support, technician and admin
@@ -75,10 +79,19 @@ export function parseResults(html: string, place: Place): Found[] {
   return found
 }
 
+/**
+ * Whether a title reads as IT work at all. Jobs.cz is searched in its IT fields, so triage takes
+ * that for granted; an employer's own careers page lists machinists and warehouse staff as well.
+ */
+export function looksLikeIt(title: string): boolean {
+  return [PLAINLY_IT, AI_WORK, DEV, FALLBACK].some((r) => r.test(title))
+}
+
 /** Whether a posting is worth an agent run, and how soon. */
 export function triage(title: string): { skip: boolean; priority: number } {
   if (TOO_SENIOR.test(title)) return { skip: true, priority: 0 }
   if (OFF_TOPIC.test(title) && !PLAINLY_IT.test(title)) return { skip: true, priority: 0 }
+  if (NOT_SOFTWARE.test(title)) return { skip: true, priority: 0 }
   // A testing or analyst title is a fallback, unless it also names programming
   // ("Programátor / analytik" still counts as development, just below the pure ones).
   if (FALLBACK.test(title)) return { skip: false, priority: CODING.test(title) ? 1 : 0 }

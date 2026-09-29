@@ -18,7 +18,7 @@ import { fetchMpsv } from './mpsv'
 import { reachable } from './commute'
 import { CAREER_PAGES, fetchCareerPage } from './careers'
 import { briefText, getBrief } from '../interview/brief'
-import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
+import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, looksLikeIt, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
 // A score costs ~20 neurons (score.ts), so thirty a day is ~600, a fraction of the 10 000 the
 // plan includes. The cap is for the queue's first days, when it holds a hundred and more.
@@ -106,7 +106,8 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     if (done.has(step)) continue
     await mark(step)
     try {
-      const found = await fetchCareerPage(page)
+      const listed = await fetchCareerPage(page)
+      const found = 'itOnly' in page ? listed.filter((f) => looksLikeIt(f.title)) : listed
       const added = await insertFound(env, found.map((f) => ({ ...f, query: `Kariéra: ${page.company}` })))
       return { step: 'search', detail: `${page.company} careers: ${found.length} postings, ${added} new` }
     } catch (err) {
@@ -264,9 +265,12 @@ async function insertFound(env: Env, found: Candidate[]) {
   )
   // Companies repost the same role under a new id, and post it on both sources; one suggestion
   // per title and company is enough.
+  // Keyed on letters and digits only: a careers page writes "FPGA / RFSoC" where Jobs.cz has
+  // "FPGA/RFSoC".
+  const key = (title: string, company: string | null) => `${title} | ${company ?? ''}`.toLowerCase().replace(/[^\p{L}\p{N}|+#]+/gu, '')
   const known = new Set(
-    (await env.DB.prepare(`SELECT lower(title) || ' | ' || lower(coalesce(company, '')) AS k FROM suggestions`).all<{ k: string }>()).results.map(
-      (r) => r.k,
+    (await env.DB.prepare('SELECT title, company FROM suggestions').all<{ title: string; company: string | null }>()).results.map((r) =>
+      key(r.title, r.company),
     ),
   )
   const inserts = found
@@ -274,7 +278,7 @@ async function insertFound(env: Env, found: Candidate[]) {
     .filter((f) => reachable(f.location, f.remote))
     .filter((f) => !onBoard.has(f.url))
     .filter((f) => {
-      const k = `${f.title.toLowerCase()} | ${(f.company ?? '').toLowerCase()}`
+      const k = key(f.title, f.company)
       if (known.has(k)) return false
       known.add(k)
       return true

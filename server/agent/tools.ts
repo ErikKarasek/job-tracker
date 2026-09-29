@@ -2,6 +2,7 @@
 // reads to decide when and how to call it, and the function that runs when it does. The model
 // never executes anything itself; it asks, and run.ts calls the function here.
 import type { Env } from '../types'
+import { UU_HOSTS, uuPageUrl, uuPostingText } from '../scout/careers'
 
 export type ToolCall = { name: string; arguments: Record<string, unknown> }
 
@@ -33,6 +34,8 @@ const MAX_POSTING_CHARS = 8_000
 export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ ok: true; text: string } | { ok: false; reason: string }> {
   const url = str(args.url)
   if (!url || !/^https?:\/\//i.test(url)) return { ok: false, reason: 'Not an http(s) URL.' }
+  const uu = await uuPosting(url)
+  if (uu) return uu
   let html: string
   try {
     const res = await fetch(url, {
@@ -54,6 +57,29 @@ export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ 
     }
   }
   return { ok: true, text: text.slice(0, MAX_POSTING_CHARS) }
+}
+
+/**
+ * Unicorn's careers site draws postings with JavaScript, but the page's data is public JSON
+ * (careers.ts), so its postings are read from there. Null for any other site.
+ */
+async function uuPosting(url: string): Promise<{ ok: true; text: string } | { ok: false; reason: string } | null> {
+  const u = new URL(url)
+  const code = u.pathname.replace(/^\/|\/$/g, '')
+  if (!UU_HOSTS.includes(u.hostname.replace(/^www\./, '')) || !code || code.includes('/')) return null
+  try {
+    const res = await fetch(uuPageUrl(u.origin, code), {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JobTrackerAgent/1.0)', 'Accept-Language': 'cs,en;q=0.8' },
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) return { ok: false, reason: `The page answered HTTP ${res.status}.` }
+    const text = uuPostingText(await res.text())
+    // No markup noise left here, so a real posting is shorter than MIN_POSTING_CHARS allows.
+    if (text.length < 500) return { ok: false, reason: 'The posting page holds almost no text; ask the user to paste it.' }
+    return { ok: true, text: text.slice(0, MAX_POSTING_CHARS) }
+  } catch (err) {
+    return { ok: false, reason: `Could not load the page: ${String(err)}` }
+  }
 }
 
 export function htmlToText(html: string) {
