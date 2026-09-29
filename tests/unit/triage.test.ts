@@ -16,16 +16,23 @@ test('AI and automation work comes first', () => {
 })
 
 test('a helpdesk "agent" is support work, not AI', () => {
-  assert.equal(priority('Support Agent'), 2)
-  assert.equal(priority('Service Desk Agent (EN)'), 2)
-  assert.equal(priority('Customer Support Agent – IT'), 2)
+  assert.equal(priority('Support Agent'), 1)
+  assert.equal(priority('Service Desk Agent (EN)'), 1)
+  assert.equal(priority('Customer Support Agent – IT'), 1)
 })
 
-test('junior development, support and IS work come second', () => {
+test('development and IS implementation come second', () => {
   assert.equal(priority('Junior Frontend Developer (React)'), 2)
-  assert.equal(priority('Správce IT / helpdesk'), 2)
   assert.equal(priority('Konzultant implementace ERP'), 2)
-  assert.equal(priority('Junior IT specialista'), 2)
+  assert.equal(priority('Programátor PHP'), 2)
+})
+
+test('support, technician and admin roles queue after development', () => {
+  assert.equal(priority('Správce IT / helpdesk'), 1)
+  assert.equal(priority('Junior IT specialista'), 1)
+  assert.equal(priority('IT technik (M/Ž)'), 1)
+  assert.equal(priority('IT JUNIOR / SYSTÉMOVÝ ADMINISTRÁTOR (m/ž)'), 1)
+  assert.equal(priority('IT Field Support Engineer (L1)'), 1)
 })
 
 test('testing and analyst roles are a fallback', () => {

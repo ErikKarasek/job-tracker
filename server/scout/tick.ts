@@ -15,6 +15,7 @@ import { sendDigest, sendMail } from './email'
 import { PRECISE_FROM, parseSalary, scoreFit } from './score'
 import { draftFollowups, listFollowups } from '../followup/followup'
 import { fetchMpsv } from './mpsv'
+import { reachable } from './commute'
 import { CAREER_PAGES, fetchCareerPage } from './careers'
 import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, parseResults, searchUrl, triage, type Place, type Source } from './search'
@@ -269,6 +270,8 @@ async function insertFound(env: Env, found: Candidate[]) {
     ),
   )
   const inserts = found
+    // Too far without a car (see commute.ts); dropped before it costs an agent run.
+    .filter((f) => reachable(f.location, f.remote))
     .filter((f) => !onBoard.has(f.url))
     .filter((f) => {
       const k = `${f.title.toLowerCase()} | ${(f.company ?? '').toLowerCase()}`

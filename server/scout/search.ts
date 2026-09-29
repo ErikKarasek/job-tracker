@@ -43,17 +43,21 @@ const TOO_SENIOR = /(?<!\p{L})(senior|sr\.|lead|head|vedouc[ií]|manaž\p{L}*|ma
 const OFF_TOPIC = /(kvalit|výrob|strojír|stavb|účetn|obchodn|obchodník|pokladn|mistr|montáž|řidič|skladn|údržb|prodej|nákup|procurement)/i
 const PLAINLY_IT = /(\bSW\b|software|\bIT\b|\bIS\b|ICT|ERP|SAP|junior|tester|vývojář|programátor|developer)/i
 // What Erik is after, in order (set by him on 2026-09-26): AI automation and agents first; then
-// junior development, IT support and administration, and implementing information systems; any
-// other IT after those. Testing and analyst roles he no longer wants, but they stay as a fallback,
-// scored last. The queue is ordered by these priorities (3, 2, 1, 0).
+// junior development and implementing information systems; then IT support, technician and admin
+// roles along with any other IT. Testing and analyst roles he no longer wants, but they stay as a
+// fallback, scored last. The queue is ordered by these priorities (3, 2, 1, 0).
 // Not a bare "agent": "Support Agent" and "Service Desk Agent" are helpdesk titles. An AI agent
 // role says AI anyway, or "agentic" / "agentní".
 const AI_WORK = /(\bAI\b|umělá inteligence|umělou inteligenc|artificial intelligence|machine learning|\bML\b|\bLLM|\bGPT|automatiza|automation|\bRPA\b|n8n|zapier|make\.com|chatbot|agentic|agentn[ií])/i
-// "Junior" alone says the level, not the work, so it is kept apart: it lifts an IT title but does
-// not rescue a testing one ("Junior Tester" stays a fallback).
-const JUNIOR = /(junior|absolvent|trainee)/i
-const WANTED =
-  /(frontend|front-end|backend|full.?stack|react|javascript|typescript|node\.?js|programátor|vývojář|developer|\bweb|helpdesk|help desk|service desk|support|podpor|technik|správce|správa|administrátor|\bL1\b|\bL2\b|implement|konzultant|consultant|zavádění|\bERP\b|\bSAP\b)/i
+// Development and implementing information systems: what he wants right after AI work.
+const DEV =
+  /(frontend|front-end|backend|full.?stack|react|javascript|typescript|node\.?js|programátor|vývojář|developer|\bweb|implement|konzultant|consultant|zavádění|\bERP\b|\bSAP\b)/i
+// Support, technician and administration roles: wanted, but he gets most of them (his L1 job
+// fits them well, so they score high) and asked on 2026-09-29 to see fewer, so they queue after
+// development.
+const SUPPORT =
+  /(helpdesk|help desk|service desk|support|podpor|technik|technician|specialist|správce|správa|administrátor|admin\b|\bL1\b|\bL2\b)/i
+const WANTED = new RegExp(`${DEV.source}|${SUPPORT.source}`, 'i')
 const FALLBACK = /(tester|testov|\bQA\b|quality assurance|quality engineer|test engineer|selenium|analytik|analyst|analytič)/i
 const REMOTE_TAG = /(převážně|plně) z domova/i
 
@@ -83,7 +87,9 @@ export function triage(title: string): { skip: boolean; priority: number } {
   // ("Programátor / analytik" still counts as development, just below the pure ones).
   if (FALLBACK.test(title)) return { skip: false, priority: wanted ? 1 : 0 }
   if (AI_WORK.test(title)) return { skip: false, priority: 3 }
-  return { skip: false, priority: wanted || JUNIOR.test(title) ? 2 : 1 }
+  if (DEV.test(title)) return { skip: false, priority: 2 }
+  // Support and admin next to "other IT": after development, before testing and analysis.
+  return { skip: false, priority: 1 }
 }
 
 function decode(s: string | undefined) {

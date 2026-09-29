@@ -6,6 +6,8 @@
 // The full dataset is 188 MB; the daily increment (new, changed and withdrawn vacancies) is about
 // 12 MB, ~2 400 vacancies, of which ~75 are IT work. That is what the scout reads, once a day.
 // Terms of use: https://data.mpsv.cz/web/data/podminky-uziti
+import { cityFromPsc } from './commute'
+
 const INCREMENT = (day: string) => `https://data.mpsv.cz/od/soubory/volna-mista-prirustek/volna-mista-prirustek-${day}.json`
 export const DETAIL = (portalId: number) => `https://up.gov.cz/volna-mista-v-cr#/volna-mista-detail/${portalId}`
 
@@ -63,6 +65,8 @@ export async function fetchMpsv(day: string): Promise<MpsvFound[]> {
     if (!IT_ISCO.test(v.profeseCzIsco?.id?.split('/').pop() ?? '')) continue
     const text = v.upresnujiciInformace?.cs ?? ''
     const region = v.mistoVykonuPrace?.pracoviste?.map((p) => REGIONS[p.adresa?.kraj?.id ?? '']).find(Boolean)
+    // The town from the postcode, so the commute filter can tell Pardubice from the rest of its region.
+    const city = v.mistoVykonuPrace?.pracoviste?.map((p) => cityFromPsc(p.adresa?.psc)).find(Boolean)
     const anywhere = v.mistoVykonuPrace?.typMistaVykonuPrace?.id?.endsWith('celaCR') ?? false
     const remote = REMOTE_TEXT.test(text)
     if (!region && !remote && !anywhere) continue
@@ -73,11 +77,11 @@ export async function fetchMpsv(day: string): Promise<MpsvFound[]> {
       url: DETAIL(v.portalId),
       title,
       company: v.zamestnavatel?.nazev?.trim() ?? null,
-      location: region ?? (anywhere ? 'celá ČR' : null),
+      location: city ?? region ?? (anywhere ? 'celá ČR' : null),
       remote,
       salaryMin: v.mesicniMzdaOd ?? null,
       salaryMax: v.mesicniMzdaDo ?? null,
-      text: postingText(v, title, region ?? (anywhere ? 'celá ČR' : 'neuvedeno')),
+      text: postingText(v, title, city ?? region ?? (anywhere ? 'celá ČR' : 'neuvedeno')),
     })
   }
   return found
