@@ -1,0 +1,21 @@
+diff --git a/node_modules/postman-collection/node_modules/@faker-js/faker/lib/fake.js b/node_modules/postman-collection/node_modules/@faker-js/faker/lib/fake.js
+index 186ca27..e61a70b 100644
+--- a/node_modules/postman-collection/node_modules/@faker-js/faker/lib/fake.js
++++ b/node_modules/postman-collection/node_modules/@faker-js/faker/lib/fake.js
+@@ -61,11 +61,14 @@ function Fake (faker) {
+     // split the method into module and function
+     var parts = method.split('.');
+ 
+-    if (typeof faker[parts[0]] === "undefined") {
++    // Security fix (GHSA-qxc2-j82w-r537): only faker's own modules and methods, never
++    // inherited ones like constructor.constructor, which reaches Function.
++    var hasOwn = Object.prototype.hasOwnProperty;
++    if (parts.length !== 2 || !hasOwn.call(faker, parts[0]) || faker[parts[0]] === null || typeof faker[parts[0]] !== "object") {
+       throw new Error('Invalid module: ' + parts[0]);
+     }
+ 
+-    if (typeof faker[parts[0]][parts[1]] === "undefined") {
++    if (!hasOwn.call(faker[parts[0]], parts[1]) || typeof faker[parts[0]][parts[1]] !== "function") {
+       throw new Error('Invalid method: ' + parts[0] + "." + parts[1]);
+     }
+ 
