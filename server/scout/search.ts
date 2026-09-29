@@ -4,10 +4,17 @@
 // robots.txt allows both /prace/ (search) and /rpd/ (postings). StartupJobs and LinkedIn draw
 // theirs with JavaScript and cannot be searched this way.
 
-// Jobs.cz's own IT fields rather than keyword searches: full-text search for "service desk" or
-// "QA" mostly found call centres and factory quality control, while these three hold only IT
-// work. Between them they cover testing, support and admin, analysis and junior development.
+// Jobs.cz's own IT fields, plus a few keyword searches for web development. Full-text search for
+// broad words ("service desk", "QA") mostly found call centres and factory quality control, so the
+// fields carry support, admin and analysis. But the development field is mostly PLC, ERP and
+// vendor systems, and in a month it held one real junior web posting; a technology name is
+// precise enough to search for, so those come first (added 2026-09-29).
 export const SOURCES = [
+  { key: 'kw-react', label: 'Hledání: React', q: 'react' },
+  { key: 'kw-typescript', label: 'Hledání: TypeScript', q: 'typescript' },
+  { key: 'kw-javascript', label: 'Hledání: JavaScript', q: 'javascript' },
+  { key: 'kw-node', label: 'Hledání: Node.js', q: 'node.js' },
+  { key: 'kw-junior-dev', label: 'Hledání: junior vývojář', q: 'junior vývojář' },
   { key: 'dev', label: 'IT: vývoj aplikací', slug: 'is-it-vyvoj-aplikaci-a-systemu' },
   { key: 'admin', label: 'IT: správa systémů a HW', slug: 'is-it-sprava-systemu-a-hw' },
   { key: 'analysis', label: 'IT: konzultace a analýzy', slug: 'is-it-konzultace-analyzy-a-projektove-rizeni' },
@@ -23,11 +30,14 @@ export const MAX_PAGES = 4
 
 // Hradec Králové with the site's own 50 km radius, which takes in Pardubice too. Remote is the
 // whole country filtered to "mostly from home", the site's own filter.
+// A keyword search is the same page with q[]= instead of a field in the path.
 export function searchUrl(source: Source, place: Place, page: number) {
+  const path = 'slug' in source ? `${source.slug}/` : ''
+  const query = 'q' in source ? `q%5B%5D=${encodeURIComponent(source.q)}&` : ''
   const base =
     place === 'hk'
-      ? `https://www.jobs.cz/prace/hradec-kralove/${source.slug}/?`
-      : `https://www.jobs.cz/prace/${source.slug}/?arrangement=work-mostly-from-home&`
+      ? `https://www.jobs.cz/prace/hradec-kralove/${path}?${query}`
+      : `https://www.jobs.cz/prace/${path}?${query}arrangement=work-mostly-from-home&`
   return `${base}page=${page}`
 }
 

@@ -70,3 +70,12 @@ test('a careers page with production work keeps only titles that read as IT', ()
     assert.ok(!looksLikeIt(t), t)
   }
 })
+
+test('keyword searches and field searches build the right Jobs.cz URLs', async () => {
+  const { SOURCES, searchUrl } = await import('../../server/scout/search.ts')
+  const react = SOURCES.find((s) => s.key === 'kw-react')!
+  const dev = SOURCES.find((s) => s.key === 'dev')!
+  assert.equal(searchUrl(react, 'hk', 1), 'https://www.jobs.cz/prace/hradec-kralove/?q%5B%5D=react&page=1')
+  assert.equal(searchUrl(react, 'remote', 2), 'https://www.jobs.cz/prace/?q%5B%5D=react&arrangement=work-mostly-from-home&page=2')
+  assert.equal(searchUrl(dev, 'hk', 1), 'https://www.jobs.cz/prace/hradec-kralove/is-it-vyvoj-aplikaci-a-systemu/?page=1')
+})
