@@ -41,6 +41,9 @@ test('testing and analyst roles are a fallback', () => {
   assert.equal(priority('Business analyst'), 0)
   // ...unless the title also names wanted work
   assert.equal(priority('Programátor / analytik'), 1)
+  // ...but not when the other half is consulting or support
+  assert.equal(priority('Data Analyst / Risk Management Consultant'), 0)
+  assert.equal(priority('Tester / IT podpora'), 0)
   // ...and testing is not rescued by mentioning automation
   assert.equal(priority('Tester – automatizace testů'), 0)
 })

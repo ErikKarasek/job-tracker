@@ -52,13 +52,10 @@ const AI_WORK = /(\bAI\b|umělá inteligence|umělou inteligenc|artificial intel
 // Development and implementing information systems: what he wants right after AI work.
 const DEV =
   /(frontend|front-end|backend|full.?stack|react|javascript|typescript|node\.?js|programátor|vývojář|developer|\bweb|implement|konzultant|consultant|zavádění|\bERP\b|\bSAP\b)/i
-// Support, technician and administration roles: wanted, but he gets most of them (his L1 job
-// fits them well, so they score high) and asked on 2026-09-29 to see fewer, so they queue after
-// development.
-const SUPPORT =
-  /(helpdesk|help desk|service desk|support|podpor|technik|technician|specialist|správce|správa|administrátor|admin\b|\bL1\b|\bL2\b)/i
-const WANTED = new RegExp(`${DEV.source}|${SUPPORT.source}`, 'i')
 const FALLBACK = /(tester|testov|\bQA\b|quality assurance|quality engineer|test engineer|selenium|analytik|analyst|analytič)/i
+// What rescues a testing or analyst title: it names programming. "Consultant" or "support" next to
+// "Data Analyst" does not ("Data Analyst / Risk Management Consultant" is still analysis).
+const CODING = /(programátor|vývojář|developer|frontend|backend|full.?stack)/i
 const REMOTE_TAG = /(převážně|plně) z domova/i
 
 /** The result cards on one Jobs.cz search page. */
@@ -82,13 +79,14 @@ export function parseResults(html: string, place: Place): Found[] {
 export function triage(title: string): { skip: boolean; priority: number } {
   if (TOO_SENIOR.test(title)) return { skip: true, priority: 0 }
   if (OFF_TOPIC.test(title) && !PLAINLY_IT.test(title)) return { skip: true, priority: 0 }
-  const wanted = WANTED.test(title)
-  // A testing or analyst title is a fallback, unless it also names wanted work
+  // A testing or analyst title is a fallback, unless it also names programming
   // ("Programátor / analytik" still counts as development, just below the pure ones).
-  if (FALLBACK.test(title)) return { skip: false, priority: wanted ? 1 : 0 }
+  if (FALLBACK.test(title)) return { skip: false, priority: CODING.test(title) ? 1 : 0 }
   if (AI_WORK.test(title)) return { skip: false, priority: 3 }
   if (DEV.test(title)) return { skip: false, priority: 2 }
-  // Support and admin next to "other IT": after development, before testing and analysis.
+  // IT support, technician and admin roles, and any other IT: after development, before testing
+  // and analysis. He gets most of these (his L1 job fits them, so they score high) and asked on
+  // 2026-09-29 to see fewer, which is why they are not level with development any more.
   return { skip: false, priority: 1 }
 }
 
