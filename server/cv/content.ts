@@ -12,7 +12,7 @@ const shared = {
   web: 'erikkarasek.cz',
   // Served by the portfolio; the head-only crop of the hero shot.
   photo: 'https://erikkarasek.cz/img/me-cv.jpg',
-  tech: ['React', 'Node.js', 'JavaScript', 'Python', 'Java', 'REST/JSON API', 'Cloudflare Workers', 'Supabase', 'Jira', 'Git', 'AI nástroje'],
+  tech: ['AI agenti', 'Workers AI', 'LLM API', 'Prompt engineering', 'REST/JSON API', 'TypeScript', 'Node.js', 'Python', 'React', 'Cloudflare Workers & D1', 'Git'],
 }
 
 export const cv = {
@@ -34,7 +34,7 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      'Junior vývojář, který staví aplikace a AI automatizace od nápadu po nasazení. Ve vlastních projektech jsem postavil AI agenty na Cloudflare Workers AI, kteří každé ráno sami procházejí nabídky práce, hodnotí je a připravují podklady, a cross-platform aplikaci Nexus Grind pro desktop i mobil (React, TypeScript, Tauri, React Native, Supabase). AI používám denně při vývoji a její výstupy ověřuji kódem, ne slepou důvěrou. Aktuálně pracuji jako analytik / tester na projektu ENTSO-E Transparency Platform ve společnosti Unicorn a mám zázemí v IT podpoře (helpdesk L1, Active Directory). Hledám roli v AI automatizaci nebo vývoji.',
+      'Junior vývojář, který staví AI automatizace a aplikace od nápadu po nasazení. Ve vlastních projektech mám AI agenty na Cloudflare Workers AI, kteří každé ráno sami procházejí nabídky práce, hodnotí je a připravují podklady, a cross-platform aplikaci Nexus Grind (React, TypeScript, Tauri, React Native). Výstupy modelu ověřuji kódem, ne slepou důvěrou. Pracuji jako analytik / tester na projektu ENTSO-E ve společnosti Unicorn, dřív IT podpora (helpdesk L1, Active Directory). Hledám roli v AI automatizaci nebo vývoji.',
     strengths: [
       ['Rychlé učení a samostatnost', 'v nových technologiích a procesech se zorientuju rychle.'],
       ['AI-first přístup', 'běžně využívám AI k rychlejšímu a kvalitnějšímu vývoji.'],
@@ -59,10 +59,8 @@ export const cv = {
         where: 'BEDNAR FMT s.r.o. · Rychnov nad Kněžnou',
         points: [
           'Uživatelská podpora 1. úrovně: příjem, řešení a uzavírání incidentů v systému JIRA.',
-          'Diagnostika a oprava HW závad, výměna komponent (RAM, SSD, periferie).',
-          'Příprava a konfigurace nových stanic (Windows), přidávání do domény přes Active Directory.',
-          'Vzdálená správa a troubleshooting pomocí RDP / TeamViewer.',
-          'Evidence a údržba IT vybavení, správa skladu HW.',
+          'Příprava a konfigurace stanic s Windows, doména přes Active Directory, vzdálená správa přes RDP a TeamViewer.',
+          'Diagnostika a oprava hardwaru, evidence a údržba IT vybavení.',
         ],
       },
       {
@@ -79,19 +77,52 @@ export const cv = {
         role: 'Odborná stáž – 3D grafika',
         when: '2024',
         where: 'Erasmus+, Německo',
-        points: ['Tvorba 3D modelů a jednoduchých animací v Blenderu.', 'Práce s texturami, osvětlením a exportem modelů pro digitální design.'],
+        points: ['Tvorba 3D modelů a animací v Blenderu: textury, osvětlení, export pro digitální design.'],
       },
       {
         role: 'Brigádník',
         when: 'červen 2020 – leden 2024',
         where: "McDonald's · Hradec Králové",
         points: [
-          'Obsluha zákazníků a příprava objednávek v rychlém provozu.',
-          'Týmová spolupráce, spolehlivost a flexibilita ve směnném provozu souběžně se studiem.',
+          'Rychlý provoz, práce v týmu a směny skládané kolem školy.',
         ],
       },
     ],
     projects: [
+      {
+        name: 'Job Tracker',
+        when: '2026',
+        link: 'job-tracker-10s.pages.dev',
+        study: 'erikkarasek.cz/job-tracker',
+        points: [
+          'Kanban nástroj na sledování přihlášek do práce: karta na pozici, fáze wishlist → applied → interview → offer/rejected.',
+          'Statistiky nad historií přechodů: funnel podle fází, denní timeline a hlídání přihlášek bez aktivity.',
+          'Tři AI agenti na Cloudflare Workers AI (tool calling): z odkazu na inzerát vznikne karta se skóre shody a průvodním dopisem, životopis přeskládaný na míru roli (kontrolovaný proti skutečnému) a před pohovorem brief o firmě s pravděpodobnými otázkami.',
+          'Scout na cron triggeru: ráno sám projde IT obory na Jobs.cz i otevřená data Úřadu práce, levné filtry uberou seniorní a neIT nabídky před voláním modelu, hodnotí se ve dvou kolech (malý model seřadí, větší přeměří nadějné podle chybějících požadavků) a karty čekají na schválení ve schránce.',
+          'React 19 + Vite + Tailwind v4, REST API v Hono jako Cloudflare Pages Function, data v Cloudflare D1, TypeScript se sdílenými typy; na každý push běží v CI testy API (Postman/Newman) i boardu (Playwright) proti čerstvě sestavené kopii s vlastní databází.',
+        ],
+      },
+      {
+        name: 'Automatizace',
+        when: '2026',
+        link: 'erikkarasek.cz/automation',
+        points: [
+          'Sada vlastních AI agentů, která dělá rutinu kolem hledání práce a projektů: v noci sepíše, co jsem ten den udělal, a zkontroluje nový kód, přes den čte odpovědi firem z e-mailu a ráno posílá přehled nových nabídek.',
+          'Agent vždy jen navrhne, potvrzuje člověk: všechno chodí do Telegramu s tlačítky a bez stisknutí se v evidenci přihlášek nic nezmění.',
+          'Node.js, Claude CLI, Telegram Bot API, IMAP a plánované úlohy (launchd, Cloudflare Workers); samostatný hlídač hlásí úlohu, která neproběhla, protože tichá chyba je horší než žádný běh.',
+        ],
+      },
+      {
+        name: 'Subscription Tracker',
+        when: '2026',
+        link: 'github.com/ErikKarasek/subscription-tracker',
+        study: 'erikkarasek.cz/subscriptions',
+        points: [
+          'Přehled předplatných: útrata po kategoriích, skutečně zaplacené částky v čase, hlídání blížících se plateb a nevyužívaných služeb.',
+          'Cloudflare Worker se statickými assety hostí web i Hono API a denní cron trigger posouvá platby a rozesílá e-maily přes Resend.',
+          'Data v Cloudflare D1; import ze screenshotu platby přes obrazový model na Cloudflare Workers AI, převod měn přes kurzy ECB.',
+        ],
+      },
       {
         name: 'Nexus Grind',
         when: '2026',
@@ -104,50 +135,23 @@ export const cv = {
         ],
       },
       {
+        name: 'Monster-Watch',
+        when: '2026',
+        link: 'monster-watch.onrender.com',
+        study: 'erikkarasek.cz/monster-watch',
+        points: [
+          'Appka, která hlídá ceny energetických nápojů v akci po celé ČR a srovná nejlevnější variantu.',
+          'React Native (Expo), backend v Pythonu (Flask), web scraper a JSON API.',
+        ],
+      },
+      {
         name: 'LolStats',
         when: '2026',
         link: 'lolstats.erikkarasek2005.workers.dev',
         study: 'erikkarasek.cz/lol-stats',
         points: [
           'Osobní webová aplikace pro statistiky League of Legends: historie zápasů, výkonnost šampionů, win rate, KDA, tier list.',
-          'Nasazeno na Cloudflare Workers, zpracování dat na straně klienta (client-side).',
-          'Integrace s Riot Games API (Match v5, Summoner v4, League v4, Account v1, Data Dragon).',
-        ],
-      },
-      {
-        name: 'Monster-Watch',
-        when: '2026',
-        link: 'monster-watch.onrender.com',
-        study: 'erikkarasek.cz/monster-watch',
-        points: [
-          'Web aplikace pro monitoring dostupnosti energetických nápojů v obchodech po ČR.',
-          'Automatizované sledování cen a srovnání nejlevnějších variant.',
-          'Appka v React Native (Expo), backend v Pythonu (Flask), web scraper, JSON API.',
-          'Vývoj s podporou AI nástrojů (Claude, Gemini CLI): coding, debugging, optimalizace.',
-        ],
-      },
-      {
-        name: 'Job Tracker',
-        when: '2026',
-        link: 'job-tracker-10s.pages.dev',
-        study: 'erikkarasek.cz/job-tracker',
-        points: [
-          'Kanban nástroj na sledování přihlášek do práce: karta na pozici, fáze wishlist → applied → interview → offer/rejected.',
-          'Statistiky nad historií přechodů: funnel podle fází, denní timeline a hlídání přihlášek bez aktivity.',
-          'Tři AI agenti na Cloudflare Workers AI (tool calling): z odkazu na inzerát vznikne karta se skóre shody a průvodním dopisem, životopis přeskládaný na míru roli (kontrolovaný proti skutečnému, aby nic nepřidal) a před pohovorem brief o firmě s pravděpodobnými otázkami.',
-          'Scout na cron triggeru: ráno sám projde IT obory na Jobs.cz, levné filtry uberou seniorní a neIT nabídky ještě před voláním modelu, skóre dává malý model a mzdu čte kód (malý model si ji vymýšlel), karty čekají na schválení ve schránce a ráno chodí souhrn e-mailem.',
-          'React 19 + Vite + Tailwind v4, REST API v Hono jako Cloudflare Pages Function, data v Cloudflare D1; TypeScript se sdílenými typy, jeden deploy pro web i API.',
-        ],
-      },
-      {
-        name: 'Subscription Tracker',
-        when: '2026',
-        link: 'github.com/ErikKarasek/subscription-tracker',
-        study: 'erikkarasek.cz/subscriptions',
-        points: [
-          'Přehled předplatných: útrata po kategoriích, skutečně zaplacené částky v čase, hlídání blížících se plateb a nevyužívaných služeb.',
-          'Cloudflare Worker se statickými assety hostí web i Hono API a denní cron trigger posouvá platby a rozesílá e-maily přes Resend.',
-          'Data v Cloudflare D1; import ze screenshotu platby přes obrazový model na Cloudflare Workers AI, převod měn přes kurzy ECB.',
+          'Integrace s Riot Games API (Match v5, Summoner v4, League v4, Account v1), nasazeno na Cloudflare Workers, data se zpracují v prohlížeči.',
         ],
       },
     ],
@@ -174,7 +178,7 @@ export const cv = {
 
   en: {
     ...shared,
-    tech: shared.tech.map((t) => (t === 'AI nástroje' ? 'AI tools' : t)),
+    tech: shared.tech.map((t) => ({ 'AI agenti': 'AI agents', 'LLM API': 'LLM APIs', 'REST/JSON API': 'REST/JSON APIs' })[t] ?? t),
     file: 'erik-karasek-resume.pdf',
     title: 'Junior Developer · AI Automation · IT Support',
     city: 'Hradec Králové, CZ',
@@ -191,7 +195,7 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      "A junior developer who builds applications and AI automations from idea to deployment. In my own projects I have built AI agents on Cloudflare Workers AI that go through job postings every morning on their own, score them and prepare the paperwork, and Nexus Grind, a cross-platform app for desktop and mobile (React, TypeScript, Tauri, React Native, Supabase). I use AI every day while building, and I check its output with code rather than trusting it blindly. I currently work as an analyst / tester on the ENTSO-E Transparency Platform project at Unicorn, with a background in IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
+      "A junior developer who builds AI automations and applications from idea to deployment. My own projects include AI agents on Cloudflare Workers AI that read job postings every morning, score them and prepare the paperwork, and Nexus Grind, a cross-platform app (React, TypeScript, Tauri, React Native). I check what the model returns with code rather than trusting it blindly. I work as an analyst / tester on the ENTSO-E project at Unicorn, previously IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
     strengths: [
       ['Fast learner, self-driven', 'I find my way around new technologies and processes quickly.'],
       ['AI-first', 'I use AI every day to build faster and better.'],
@@ -216,10 +220,8 @@ export const cv = {
         where: 'BEDNAR FMT s.r.o. · Rychnov nad Kněžnou',
         points: [
           'First-level user support: taking, resolving and closing incidents in JIRA.',
-          'Diagnosing and fixing hardware faults, replacing components (RAM, SSD, peripherals).',
-          'Preparing and configuring new Windows workstations, joining them to the domain via Active Directory.',
-          'Remote administration and troubleshooting over RDP / TeamViewer.',
-          'Tracking and maintaining IT equipment, managing the hardware stock.',
+          'Preparing and configuring Windows workstations, joining the domain via Active Directory, remote support over RDP and TeamViewer.',
+          'Diagnosing and fixing hardware, tracking and maintaining IT equipment.',
         ],
       },
       {
@@ -236,16 +238,50 @@ export const cv = {
         role: 'Internship – 3D graphics',
         when: '2024',
         where: 'Erasmus+, Germany',
-        points: ['Creating 3D models and simple animations in Blender.', 'Working with textures, lighting and exporting models for digital design.'],
+        points: ['Creating 3D models and animations in Blender: textures, lighting, export for digital design.'],
       },
       {
         role: 'Part-time crew member',
         when: 'June 2020 – January 2024',
         where: "McDonald's · Hradec Králové",
-        points: ['Serving customers and preparing orders in a fast-paced environment.', 'Teamwork, reliability and flexibility on shifts alongside my studies.'],
+        points: ['A fast-paced operation, teamwork and shifts fitted around school.'],
       },
     ],
     projects: [
+      {
+        name: 'Job Tracker',
+        when: '2026',
+        link: 'job-tracker-10s.pages.dev',
+        study: 'erikkarasek.cz/job-tracker',
+        points: [
+          'Kanban tool for tracking job applications: a card per role, moving wishlist → applied → interview → offer/rejected.',
+          'Stats built on the history of stage changes: a funnel by stage, a per-day timeline and a watch on applications with no activity.',
+          'Three AI agents on Cloudflare Workers AI (tool calling): a posting link becomes a card with a fit score and a cover letter, a résumé reordered for that role, and a pre-interview brief on the company.',
+          'A scout on a cron trigger: every morning it reads Jobs.cz and the Labour Office\'s open data, cheap filters drop senior and non-IT postings, and scoring runs in two rounds (a small model ranks, a larger one re-measures the promising ones against missing requirements).',
+          'React 19 + Vite, a Hono REST API as a Cloudflare Pages Function, data in D1, TypeScript with shared types; every push runs API tests (Postman/Newman) and UI tests (Playwright) in CI against a fresh build with its own database.',
+        ],
+      },
+      {
+        name: 'Automation',
+        when: '2026',
+        link: 'erikkarasek.cz/automation',
+        points: [
+          'AI agents that handle the routine around my job hunt and projects: at night they write up what I did and review the new code, by day they read companies\' replies, and in the morning they send a digest of new postings.',
+          'An agent only ever proposes and a human confirms: everything arrives in Telegram with buttons, and nothing changes in the application board until one is pressed.',
+          'Node.js, Claude CLI, Telegram Bot API, IMAP and scheduled jobs (launchd, Cloudflare Workers); a watchdog reports a job that did not run, because a silent failure is worse than none.',
+        ],
+      },
+      {
+        name: 'Subscription Tracker',
+        when: '2026',
+        link: 'github.com/ErikKarasek/subscription-tracker',
+        study: 'erikkarasek.cz/subscriptions',
+        points: [
+          'Subscription overview: spend by category, what was actually paid over time, and a watch on upcoming payments and unused services.',
+          'One Cloudflare Worker serves the site and a Hono API; a daily cron rolls payments forward and sends email through Resend.',
+          'Data in Cloudflare D1; payment screenshots imported through a vision model on Cloudflare Workers AI, currencies converted at ECB rates.',
+        ],
+      },
       {
         name: 'Nexus Grind',
         when: '2026',
@@ -258,50 +294,23 @@ export const cv = {
         ],
       },
       {
+        name: 'Monster-Watch',
+        when: '2026',
+        link: 'monster-watch.onrender.com',
+        study: 'erikkarasek.cz/monster-watch',
+        points: [
+          'An app that tracks energy-drink prices on sale across the country and compares the cheapest option.',
+          'React Native (Expo), a Python (Flask) backend, a web scraper and a JSON API.',
+        ],
+      },
+      {
         name: 'LolStats',
         when: '2026',
         link: 'lolstats.erikkarasek2005.workers.dev',
         study: 'erikkarasek.cz/lol-stats',
         points: [
           'Personal web app for League of Legends stats: match history, champion performance, win rate, KDA, tier list.',
-          'Deployed on Cloudflare Workers, all data processed client-side.',
-          'Riot Games API integration (Match v5, Summoner v4, League v4, Account v1, Data Dragon).',
-        ],
-      },
-      {
-        name: 'Monster-Watch',
-        when: '2026',
-        link: 'monster-watch.onrender.com',
-        study: 'erikkarasek.cz/monster-watch',
-        points: [
-          'Web app that tracks energy drink availability in stores across the Czech Republic.',
-          'Automated price tracking and comparison of the cheapest options.',
-          'React Native (Expo) app, Python (Flask) backend, web scraper, JSON API.',
-          'Built with AI tools (Claude, Gemini CLI): coding, debugging, optimisation.',
-        ],
-      },
-      {
-        name: 'Job Tracker',
-        when: '2026',
-        link: 'job-tracker-10s.pages.dev',
-        study: 'erikkarasek.cz/job-tracker',
-        points: [
-          'Kanban tool for tracking job applications: a card per role, moving wishlist → applied → interview → offer/rejected.',
-          'Stats built on the history of stage changes: a funnel by stage, a per-day timeline and a watch on applications with no activity.',
-          'Three AI agents on Cloudflare Workers AI (tool calling): a posting link becomes a card with a fit score and a cover letter, a résumé reordered for that role (checked against the real one so nothing is invented), and a pre-interview brief on the company with likely questions.',
-          'A scout on a cron trigger: every morning it reads the IT fields on Jobs.cz, cheap filters drop senior and non-IT postings before any model call, a small model scores the fit while code reads the salary (the model invented it), cards wait in an inbox for approval, and a digest e-mail goes out in the morning.',
-          'React 19 + Vite + Tailwind v4, REST API in Hono as a Cloudflare Pages Function, data in Cloudflare D1; TypeScript with shared types, one deploy for the site and the API.',
-        ],
-      },
-      {
-        name: 'Subscription Tracker',
-        when: '2026',
-        link: 'github.com/ErikKarasek/subscription-tracker',
-        study: 'erikkarasek.cz/subscriptions',
-        points: [
-          'Subscription overview: spend by category, what was actually paid over time, and a watch on upcoming payments and unused services.',
-          'A Cloudflare Worker with static assets serves the site and a Hono API, and a daily cron trigger rolls payments forward and sends email through Resend.',
-          'Data in Cloudflare D1; payment screenshots imported through a vision model on Cloudflare Workers AI, currencies converted at ECB rates.',
+          'Riot Games API integration (Match v5, Summoner v4, League v4, Account v1), deployed on Cloudflare Workers, all data processed in the browser.',
         ],
       },
     ],
