@@ -20,6 +20,13 @@ export const CAREER_PAGES = [
 ] as const
 export type CareerPage = (typeof CAREER_PAGES)[number]
 
+/**
+ * Hosts of the pages above that draw postings on the server, checked by hand. A short posting
+ * there is still a posting: ELDIS writes some in under 2 500 characters, which the agent's
+ * JavaScript-shell check (tools.ts) would otherwise turn away.
+ */
+export const SERVER_DRAWN_HOSTS: string[] = CAREER_PAGES.filter((p) => !('uuPage' in p)).map((p) => new URL(p.list).hostname)
+
 export type CareerPosting = { url: string; title: string; company: string; location: string | null; remote: false }
 
 const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; JobTrackerScout/1.0)', 'Accept-Language': 'cs' }

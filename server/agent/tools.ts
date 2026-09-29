@@ -2,7 +2,7 @@
 // reads to decide when and how to call it, and the function that runs when it does. The model
 // never executes anything itself; it asks, and run.ts calls the function here.
 import type { Env } from '../types'
-import { UU_HOSTS, uuPageUrl, uuPostingText } from '../scout/careers'
+import { SERVER_DRAWN_HOSTS, UU_HOSTS, uuPageUrl, uuPostingText } from '../scout/careers'
 
 export type ToolCall = { name: string; arguments: Record<string, unknown> }
 
@@ -28,6 +28,8 @@ const int = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.
 // sees the empty shell. Measured on real pages: a Jobs.cz posting reads 9 000+ characters,
 // a JavaScript-drawn one under 2 500.
 const MIN_POSTING_CHARS = 2_500
+// Careers pages known to be drawn on the server (careers.ts): only an error page is this short.
+const MIN_KNOWN_POSTING_CHARS = 1_000
 // Enough for any posting; stops a huge page from eating the whole daily allocation.
 const MAX_POSTING_CHARS = 8_000
 
@@ -49,7 +51,8 @@ export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ 
     return { ok: false, reason: `Could not load the page: ${String(err)}` }
   }
   const text = htmlToText(html)
-  if (text.length < MIN_POSTING_CHARS) {
+  const known = SERVER_DRAWN_HOSTS.includes(new URL(url).hostname)
+  if (text.length < (known ? MIN_KNOWN_POSTING_CHARS : MIN_POSTING_CHARS)) {
     return {
       ok: false,
       reason:
@@ -64,7 +67,12 @@ export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ 
  * (careers.ts), so its postings are read from there. Null for any other site.
  */
 async function uuPosting(url: string): Promise<{ ok: true; text: string } | { ok: false; reason: string } | null> {
-  const u = new URL(url)
+  let u: URL
+  try {
+    u = new URL(url)
+  } catch {
+    return null
+  }
   const code = u.pathname.replace(/^\/|\/$/g, '')
   if (!UU_HOSTS.includes(u.hostname.replace(/^www\./, '')) || !code || code.includes('/')) return null
   try {
