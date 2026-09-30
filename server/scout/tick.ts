@@ -16,6 +16,7 @@ import { PRECISE_FROM, parseSalary, scoreFit } from './score'
 import { draftFollowups, listFollowups } from '../followup/followup'
 import { fetchMpsv } from './mpsv'
 import { reachable } from './commute'
+import { sendBrief, telegramReady, type TelegramEnv } from './telegram'
 import { CAREER_PAGES, fetchCareerPage } from './careers'
 import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, looksLikeIt, parseResults, searchUrl, triage, type Place, type Source } from './search'
@@ -25,7 +26,7 @@ import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, looksLikeIt, parseResults, searc
 const DAILY_AGENT_RUNS = 30
 
 export type TickResult = { step: 'remind' | 'search' | 'score' | 'followup' | 'digest' | 'idle'; detail: string }
-export type ScoutEnv = Env & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string; DIGEST_EMAIL?: string }
+export type ScoutEnv = Env & TelegramEnv & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string; DIGEST_EMAIL?: string }
 
 /** Prague-local calendar day, so "today" turns over at midnight here, not in UTC. */
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
@@ -43,7 +44,7 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   const mark = (step: string) =>
     env.DB.prepare('INSERT OR IGNORE INTO scout_log (day, step, at) VALUES (?, ?, ?)').bind(day, step, new Date().toISOString()).run()
 
-  // 0. The day before an interview, its brief goes out by e-mail. Cheap, so it comes first.
+  // 0. The day before an interview, its brief goes out (Telegram, or e-mail). Cheap, so it comes first.
   const tomorrow = new Date(Date.now() + 24 * 3600 * 1000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
   const upcoming = await env.DB.prepare(
     "SELECT id, company, role, job_url FROM applications WHERE interview_at = ? AND stage = 'interview'",
@@ -55,6 +56,15 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
     if (done.has(step)) continue
     await mark(step)
     const brief = await getBrief(env.DB, card.id)
+    // Telegram when it is set up, like the rest of the job hunt; e-mail otherwise.
+    if (telegramReady(env)) {
+      try {
+        const sent = await sendBrief(env, card, brief?.status === 'ready' ? brief.brief : null)
+        return { step: 'remind', detail: `interview reminder for ${card.company}: ${sent}` }
+      } catch (err) {
+        console.error(`[scout] brief to Telegram failed, falling back to e-mail: ${String(err)}`)
+      }
+    }
     const body =
       brief?.status === 'ready' && brief.brief
         ? briefText(brief.brief)
