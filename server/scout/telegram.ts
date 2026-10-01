@@ -41,7 +41,18 @@ export async function sendBrief(env: TelegramEnv, card: { company: string; role:
     return 'telegram: no brief yet'
   }
 
-  const fold = (title: string, body: string) => `<b>${title}</b>\n<blockquote expandable>${esc(body)}</blockquote>`
+  // The body is shortened as plain text before it is escaped, so no cut lands inside an entity
+  // like &amp; or past the closing tag; the full brief is on the card.
+  const fold = (title: string, body: string) => {
+    const wrap = (b: string) => `<b>${title}</b>\n<blockquote expandable>${esc(b)}</blockquote>`
+    let b = body
+    let html = wrap(b)
+    while (html.length > LIMIT - 60 && b.length > 0) {
+      b = b.slice(0, Math.floor(b.length * 0.9))
+      html = wrap(`${b}…`)
+    }
+    return b.length < body.length ? `${html}\n<i>Celé na kartě na boardu.</i>` : html
+  }
   const parts = [
     fold(`Pravděpodobné otázky (${brief.questions.length})`, brief.questions.map((q, i) => `${i + 1}. ${q.question}\n→ ${q.answer}`).join('\n\n')),
     brief.topics.length ? fold('Zopakovat si', brief.topics.map((t) => `• ${t}`).join('\n')) : '',
@@ -53,8 +64,7 @@ export async function sendBrief(env: TelegramEnv, card: { company: string; role:
   let chunk = ''
   let sent = 1
   for (const p of parts) {
-    // A part longer than the limit on its own is cut; the full brief is on the card.
-    const part = p.length > LIMIT ? `${p.slice(0, LIMIT - 60)}…</blockquote>\n<i>Celé na kartě na boardu.</i>` : p
+    const part = p
     if (chunk && chunk.length + part.length + 2 > LIMIT) {
       await send(env, chunk)
       sent++
