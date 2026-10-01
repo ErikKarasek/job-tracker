@@ -81,7 +81,11 @@ export async function listFollowups(db: D1Database): Promise<FollowupRow[]> {
     .prepare(
       `SELECT f.application_id AS applicationId, f.kind, f.draft, f.created_at AS createdAt, a.company, a.role, a.job_url AS jobUrl
          FROM followups f JOIN applications a ON a.id = f.application_id
-        WHERE f.status = 'new' ORDER BY f.created_at`,
+        WHERE f.status = 'new'
+          -- Only while the card is still where the nudge was made for: a rejection, an offer
+          -- or the next stage makes an old "any news?" pointless.
+          AND a.stage = f.kind
+        ORDER BY f.created_at`,
     )
     .all<FollowupRow>()
   return results
