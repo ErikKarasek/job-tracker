@@ -43,15 +43,23 @@ export async function sendBrief(env: TelegramEnv, card: { company: string; role:
 
   // The body is shortened as plain text before it is escaped, so no cut lands inside an entity
   // like &amp; or past the closing tag; the full brief is on the card.
-  const fold = (title: string, body: string) => {
+  const MORE = '\n<i>Celé na kartě na boardu.</i>'
+  // reserve: what else goes into the same message (a header, the joins between parts), so the
+  // quote is shortened against the room it actually has rather than against the whole limit.
+  const fold = (title: string, body: string, reserve = 0) => {
     const wrap = (b: string) => `<b>${title}</b>\n<blockquote expandable>${esc(b)}</blockquote>`
+    const budget = LIMIT - 60 - reserve - MORE.length
     let b = body
     let html = wrap(b)
-    while (html.length > LIMIT - 60 && b.length > 0) {
+    while (html.length > budget && b.length > 0) {
       b = b.slice(0, Math.floor(b.length * 0.9))
       html = wrap(`${b}…`)
     }
-    return b.length < body.length ? `${html}\n<i>Celé na kartě na boardu.</i>` : html
+    // An empty body is as small as the quote gets, so anything still over budget is the title and
+    // the markup around it. Point at the board instead of handing send() a message Telegram
+    // would answer with a 400.
+    if (html.length > budget) return `<b>${title.slice(0, 80)}</b>${MORE}`
+    return b.length < body.length ? `${html}${MORE}` : html
   }
   const parts = [
     fold(`Pravděpodobné otázky (${brief.questions.length})`, brief.questions.map((q, i) => `${i + 1}. ${q.question}\n→ ${q.answer}`).join('\n\n')),
@@ -60,7 +68,7 @@ export async function sendBrief(env: TelegramEnv, card: { company: string; role:
     brief.ask.length ? fold('Zeptej se jich', brief.ask.map((a) => `• ${a}`).join('\n')) : '',
   ].filter(Boolean)
 
-  await send(env, `${head}\n\n${fold('Firma', brief.company)}`, buttons)
+  await send(env, `${head}\n\n${fold('Firma', brief.company, head.length + 2)}`, buttons)
   let chunk = ''
   let sent = 1
   for (const p of parts) {
