@@ -13,6 +13,9 @@ export const telegramReady = (env: TelegramEnv) => Boolean(env.TELEGRAM_BOT_TOKE
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+// Cut as plain text before escaping, so no cut lands inside an entity like &amp;.
+const cut = (s: string, n: number) => (s.length > n ? `${s.slice(0, n)}…` : s)
+
 async function send(env: TelegramEnv, text: string, buttons?: { text: string; url: string }[]) {
   const res = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: 'POST',
@@ -35,7 +38,10 @@ async function send(env: TelegramEnv, text: string, buttons?: { text: string; ur
  */
 export async function sendBrief(env: TelegramEnv, card: { company: string; role: string; job_url: string | null }, brief: Brief | null) {
   const buttons = [{ text: 'Otevřít board', url: BOARD }, ...(card.job_url ? [{ text: 'Inzerát', url: card.job_url }] : [])]
-  const head = `<b>🎤 Zítra pohovor</b>\n<b>${esc(card.company)}</b> – ${esc(card.role)}`
+  // Company and role come from the scrape and are unbounded, and the header goes out with the
+  // first part; cap them, or a long enough one is over the limit on its own and `reserve` has no
+  // room left to give back.
+  const head = `<b>🎤 Zítra pohovor</b>\n<b>${esc(cut(card.company, 80))}</b> – ${esc(cut(card.role, 120))}`
   if (!brief) {
     await send(env, `${head}\n\nPříprava zatím není hotová. Otevři kartu na boardu a nech ji napsat.`, buttons)
     return 'telegram: no brief yet'
