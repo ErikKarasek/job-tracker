@@ -3,9 +3,9 @@
 // ones each morning and drafts the message. Sending stays with Erik: he knows the channel (a reply
 // on Jobs.cz, the recruiter's e-mail) and whether a nudge is wise at all.
 import { recordSpend } from '../ai/budget'
+import { chat, type Llm } from '../ai/chat'
 import type { Env } from '../types'
 
-const MODEL = '@cf/mistralai/mistral-small-3.1-24b-instruct'
 const QUIET_AFTER_APPLYING_DAYS = 8
 const DAYS_AFTER_INTERVIEW = 3
 export const DRAFTS_PER_DAY = 3
@@ -46,24 +46,23 @@ const PROMPT = {
     `Napiš krátkou, zdvořilou zprávu (3–4 věty) po pohovoru na pozici "${d.role}" ve firmě ${d.company}, který byl ${czDate(d.since)}. Poděkuj za čas, zopakuj zájem o pozici a zeptej se na další kroky a jejich časový rámec. Bez podbízení.`,
 }
 
-async function writeDraft(ai: Ai, due: Due) {
-  const out = (await ai.run(MODEL as keyof AiModels, {
+async function writeDraft(env: Llm, due: Due) {
+  const out = await chat(env, 'smart')({
     messages: [
       { role: 'system', content: 'Píšeš za Erika Karáska krátké pracovní zprávy v češtině. Vrať jen text zprávy: oslovení "Dobrý den,", tělo a podpis "Erik Karásek". Nic nevymýšlej (jména, data, podrobnosti), co v zadání není. Piš spisovnou češtinou a hlídej shodu ("svou přihlášku", "rád bych").' },
       { role: 'user', content: PROMPT[due.kind](due) },
     ],
     max_tokens: 300,
-  } as never)) as { response?: string; choices?: { message?: { content?: string } }[]; usage?: { neurons?: number } }
-  const text = (out.response ?? out.choices?.[0]?.message?.content ?? '').trim()
-  return { text, neurons: Math.round(out.usage?.neurons ?? 0) }
+  })
+  return { text: (out.content ?? '').trim(), neurons: out.neurons }
 }
 
 /** Drafts follow-ups for up to DRAFTS_PER_DAY quiet cards; returns how many it wrote. */
-export async function draftFollowups(env: Env & { AI: Ai }): Promise<number> {
+export async function draftFollowups(env: Env & Llm): Promise<number> {
   const due = (await findDue(env.DB)).slice(0, DRAFTS_PER_DAY)
   let written = 0
   for (const d of due) {
-    const { text, neurons } = await writeDraft(env.AI, d)
+    const { text, neurons } = await writeDraft(env, d)
     await recordSpend(env.DB, 'followup', neurons)
     if (!text) continue
     await env.DB.prepare('INSERT OR IGNORE INTO followups (application_id, kind, draft, created_at) VALUES (?, ?, ?, ?)')

@@ -3,6 +3,7 @@
 import type { Env } from '../types'
 import { writeBrief, type Brief } from './agent'
 import { recordSpend } from '../ai/budget'
+import type { Llm } from '../ai/chat'
 
 export type BriefRow = { status: 'writing' | 'ready' | 'failed'; brief: Brief | null; error: string | null; createdAt: string }
 
@@ -16,7 +17,7 @@ export async function getBrief(db: D1Database, id: string): Promise<BriefRow | n
 }
 
 /** Marks the brief as being written and returns the work to hand to waitUntil. */
-export async function startBrief(env: Env & { AI: Ai }, id: string, text?: string): Promise<Promise<void> | null> {
+export async function startBrief(env: Env & Llm, id: string, text?: string): Promise<Promise<void> | null> {
   const card = await env.DB.prepare('SELECT company, job_url FROM applications WHERE id = ?').bind(id).first<{ company: string; job_url: string | null }>()
   if (!card?.job_url) return null
   const now = new Date().toISOString()
@@ -29,7 +30,7 @@ export async function startBrief(env: Env & { AI: Ai }, id: string, text?: strin
 
   return (async () => {
     try {
-      const { brief, neurons } = await writeBrief(env.AI, card.company, card.job_url!, text)
+      const { brief, neurons } = await writeBrief(env, card.company, card.job_url!, text)
       await recordSpend(env.DB, 'brief', neurons)
       console.log(`[brief] ${id}: ready, ${brief.sources.length} pages, ${neurons} neurons`)
       await env.DB.prepare("UPDATE interview_briefs SET status = 'ready', data = ?, error = NULL WHERE application_id = ?")

@@ -199,7 +199,7 @@ app.post('/api/applications/:id/cv', requireAdmin, async (c) => {
   const over = await overBudget(c.env.DB, 'cv')
   if (over) return c.json({ error: over }, 429)
   try {
-    const { tailoring, neurons } = await tailorCv(ai, posting)
+    const { tailoring, neurons } = await tailorCv({ ...c.env, AI: ai }, posting)
     await recordSpend(c.env.DB, 'cv', neurons)
     console.log(`[cv] tailored ${id}: ${neurons} neurons`)
     await c.env.DB.prepare(

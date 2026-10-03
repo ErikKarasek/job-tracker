@@ -5,9 +5,8 @@
 // The model may only reorder what the résumé already holds and rewrite the headline and profile
 // paragraph. Every project, skill and technology name it returns is checked against the résumé,
 // and anything missing is put back, so it can reorder but never invent or drop.
+import { chat, type ChatMessage, type Llm } from '../ai/chat'
 import { cv, type CvLang } from './content'
-
-const MODEL = '@cf/mistralai/mistral-small-3.1-24b-instruct'
 
 export type Tailoring = {
   lang: CvLang
@@ -56,8 +55,8 @@ function resumeFor(lang: CvLang) {
   })
 }
 
-export async function tailorCv(ai: Ai, posting: string): Promise<{ tailoring: Tailoring; neurons: number }> {
-  const messages = [
+export async function tailorCv(env: Llm, posting: string): Promise<{ tailoring: Tailoring; neurons: number }> {
+  const messages: ChatMessage[] = [
     {
       role: 'system',
       content: `You tailor Erik's résumé to one job posting. You only reorder and re-emphasise what the résumé already says; you never add experience, skills, numbers or technologies it does not contain. Always call tailor_cv.
@@ -71,14 +70,12 @@ ${resumeFor('en')}`,
     { role: 'user', content: `Job posting:\n\n${posting.slice(0, 8_000)}` },
   ]
 
+  const ask = chat(env, 'smart')
   let neurons = 0
   for (let attempt = 0; attempt < 2; attempt++) {
-    const out = (await ai.run(MODEL as keyof AiModels, { messages, tools: [TOOL], max_tokens: 900 } as never)) as {
-      choices?: { message?: { tool_calls?: { function: { arguments: unknown } }[] } }[]
-      usage?: { neurons?: number }
-    }
-    neurons += out.usage?.neurons ?? 0
-    const raw = out.choices?.[0]?.message?.tool_calls?.[0]?.function.arguments
+    const out = await ask({ messages, tools: [TOOL], max_tokens: 900 })
+    neurons += out.neurons
+    const raw = out.tool_calls[0]?.function.arguments
     const args = typeof raw === 'string' ? safeParse(raw) : (raw as Record<string, unknown> | undefined)
     const tailoring = args && validate(args)
     if (tailoring) return { tailoring, neurons: Math.round(neurons) }

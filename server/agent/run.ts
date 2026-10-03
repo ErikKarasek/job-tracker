@@ -5,12 +5,10 @@
 // it calls submit_draft, which ends the run with a card for the user to review. Nothing is
 // written to the board here: saving stays a human decision, made in the UI.
 import type { Env } from '../types'
+import { chat, type ChatMessage, type Llm } from '../ai/chat'
 import { PROFILE } from './profile'
 import { TOOL_SCHEMAS, runTool, toDraft, type Draft, type ToolCall } from './tools'
 
-// Chosen after a side-by-side on Workers AI: all five candidates could call tools, and Mistral
-// did it fastest (about 1.4 s a turn) with the most natural Czech, which the cover letters need.
-const MODEL = '@cf/mistralai/mistral-small-3.1-24b-instruct'
 // A normal run takes three turns: fetch, find_applications, submit_draft. The cap is for a model
 // that goes round in circles, which otherwise spends the daily allocation on nothing.
 const MAX_TURNS = 6
@@ -27,15 +25,6 @@ export type AgentResult = { trace: TraceStep[]; neurons: number } & (
   | { status: 'failed'; message: string }
 )
 
-type ChatMessage =
-  | { role: 'system' | 'user'; content: string }
-  | { role: 'assistant'; content: string | null; tool_calls?: RawToolCall[] }
-  | { role: 'tool'; tool_call_id: string; content: string }
-type RawToolCall = { id: string; type: 'function'; function: { name: string; arguments: string } }
-type ModelOutput = {
-  choices?: { message?: { content?: string | null; tool_calls?: RawToolCall[] } }[]
-  usage?: { neurons?: number }
-}
 
 const SYSTEM = `You help Erik track job applications. Given a job posting (a URL or its pasted text), you:
 1. Read the posting. For a URL, call fetch_job_posting. If that fails, stop and ask Erik, in Czech, to paste the posting text.
@@ -59,7 +48,7 @@ const brief = (value: unknown) => {
   return s.length > 300 ? `${s.slice(0, 300)}…` : s
 }
 
-export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; text?: string }): Promise<AgentResult> {
+export async function runAgent(env: Env & Llm, input: { url?: string; text?: string }): Promise<AgentResult> {
   const trace: TraceStep[] = []
   const task = input.text
     ? `Here is a job posting${input.url ? ` from ${input.url}` : ''}:\n\n${input.text.slice(0, 8_000)}`
@@ -69,23 +58,19 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
     { role: 'user', content: task },
   ]
 
+  const ask = chat(env, 'smart')
   let neurons = 0
   let havePosting = Boolean(input.text)
   let nudged = false
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const out = (await env.AI.run(MODEL as keyof AiModels, {
-      messages,
-      tools: TOOL_SCHEMAS,
-      max_tokens: 900,
-    } as never)) as ModelOutput
-    neurons += out.usage?.neurons ?? 0
-    const message = out.choices?.[0]?.message
-    const calls = message?.tool_calls ?? []
+    const message = await ask({ messages, tools: TOOL_SCHEMAS, max_tokens: 900 })
+    neurons += message.neurons
+    const calls = message.tool_calls
 
     // No tool asked for: the model is talking to the user.
     if (calls.length === 0) {
-      const text = message?.content?.trim() || 'The agent stopped without an answer.'
+      const text = message.content?.trim() || 'The agent stopped without an answer.'
       trace.push({ kind: 'message', text })
       // With the posting in hand, a text reply is the model writing the draft out as prose
       // instead of calling submit_draft, which the UI cannot use. Seen in testing; one nudge
@@ -99,7 +84,7 @@ export async function runAgent(env: Env & { AI: Ai }, input: { url?: string; tex
       return { status: 'needs_input', message: text, trace, neurons: Math.round(neurons) }
     }
 
-    messages.push({ role: 'assistant', content: message?.content ?? null, tool_calls: calls })
+    messages.push({ role: 'assistant', content: message.content, tool_calls: calls })
 
     for (const raw of calls) {
       const call: ToolCall = { name: raw.function.name, arguments: parseArgs(raw.function.arguments) }
@@ -136,7 +121,7 @@ async function findDuplicate(env: Env, draft: Draft): Promise<string | null> {
   return row?.id ?? draft.duplicateOf
 }
 
-// Workers AI hands arguments back as a JSON string for some models and an object for others.
+// Arguments come back as a JSON string from Gemini and some Workers AI models, an object from others.
 function parseArgs(raw: unknown): Record<string, unknown> {
   if (raw && typeof raw === 'object') return raw as Record<string, unknown>
   try {
