@@ -12,7 +12,7 @@ const shared = {
   web: 'erikkarasek.cz',
   // Served by the portfolio; the head-only crop of the hero shot.
   photo: 'https://erikkarasek.cz/img/me-cv.jpg',
-  tech: ['AI agenti', 'Workers AI', 'LLM API', 'Prompt engineering', 'REST/JSON API', 'TypeScript', 'Node.js', 'Python', 'React', 'Cloudflare Workers & D1', 'Git'],
+  tech: ['AI agenti', 'Workers AI', 'LLM API', 'Prompt engineering', 'REST/JSON API', 'TypeScript', 'Node.js', 'Python', 'React', 'SwiftUI', 'Tauri & Rust', 'Cloudflare Workers & D1'],
 }
 
 export const cv = {
@@ -34,12 +34,11 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      'Junior vývojář, který staví AI automatizace a aplikace od nápadu po nasazení. Ve vlastních projektech mám AI agenty na Cloudflare Workers AI, kteří každé ráno sami procházejí nabídky práce, hodnotí je a připravují podklady, a cross-platform aplikaci Nexus Grind (React, TypeScript, Tauri, React Native). Výstupy modelu ověřuji kódem, ne slepou důvěrou. Pracuji jako analytik / tester na projektu ENTSO-E ve společnosti Unicorn, dřív IT podpora (helpdesk L1, Active Directory). Hledám roli v AI automatizaci nebo vývoji.',
+      'Junior vývojář, který staví AI automatizace a aplikace od nápadu po nasazení. Mám vlastní AI agenty, kteří sami procházejí nabídky práce a hlídají moje projekty, a řídicí panel nad nimi pro Mac a iPhone. Výstupy modelu ověřuji kódem, ne slepou důvěrou. Pracuji jako analytik / tester na projektu ENTSO-E ve společnosti Unicorn, dřív IT podpora (helpdesk L1, Active Directory). Hledám roli v AI automatizaci nebo vývoji.',
     strengths: [
       ['Rychlé učení a samostatnost', 'v nových technologiích a procesech se zorientuju rychle.'],
       ['AI-first přístup', 'běžně využívám AI k rychlejšímu a kvalitnějšímu vývoji.'],
       ['Spolehlivost a smysl pro detail', 'dovádím věci do konce.'],
-      ['Chuť tvořit', 've volném čase stavím vlastní projekty od nápadu po nasazení.'],
     ],
     jobs: [
       {
@@ -90,22 +89,34 @@ export const cv = {
     ],
     projects: [
       {
+        name: 'Wisp',
+        when: '2026',
+        link: 'github.com/ErikKarasek/wisp',
+        study: 'erikkarasek.cz/wisp',
+        points: [
+          'Řídicí panel nad vlastními AI agenty: Mac appka v Tauri (TypeScript + Rust) s overlayem v notchi a nativní iPhone klient ve SwiftUI s widgety a Live Activity v Dynamic Islandu.',
+          'Claude, ChatGPT (Codex CLI) i Gemini vedle sebe se spotřebou a časem resetu; kroky agentů streamované živě přes hooky a povolení pro Clauda odkliknuté z notche, zamykací obrazovky i Telegramu.',
+          'Cloudflare Worker s D1 jako relay mezi Macem a telefonem (žádné přímé spojení); bearer token porovnávaný v konstantním čase, hooky s tajemstvím pro každou instalaci, tokeny v Keychainu.',
+          'Drží Mac vzhůru, dokud agenti pracují, i se zavřeným víkem (pravidlo pro sudo jen na spánek), s pojistkami na baterii a teplotu procesoru; 20 animovaných postaviček upravitelných i z telefonu.',
+        ],
+      },
+      {
         name: 'Job Tracker',
         when: '2026',
         link: 'job-tracker-10s.pages.dev',
         study: 'erikkarasek.cz/job-tracker',
         points: [
-          'Kanban nástroj na sledování přihlášek do práce: karta na pozici, fáze wishlist → applied → interview → offer/rejected.',
-          'Statistiky nad historií přechodů: funnel podle fází, denní timeline a hlídání přihlášek bez aktivity.',
+          'Nástěnka na sledování přihlášek (fáze wishlist → applied → interview → offer/rejected) se statistikami nad historií přechodů: funnel, denní graf a hlídání přihlášek bez aktivity.',
           'Tři AI agenti na Cloudflare Workers AI (tool calling): z odkazu na inzerát vznikne karta se skóre shody a průvodním dopisem, životopis přeskládaný na míru roli (kontrolovaný proti skutečnému) a před pohovorem brief o firmě s pravděpodobnými otázkami.',
-          'Scout na cron triggeru: ráno sám projde IT obory na Jobs.cz i otevřená data Úřadu práce, levné filtry uberou seniorní a neIT nabídky před voláním modelu, hodnotí se ve dvou kolech (malý model seřadí, větší přeměří nadějné podle chybějících požadavků) a karty čekají na schválení ve schránce.',
+          'Scout na cron triggeru: ráno sám projde IT obory na Jobs.cz i otevřená data Úřadu práce, levné filtry uberou seniorní a neIT nabídky před voláním modelu a hodnotí se ve dvou kolech (malý model seřadí, větší přeměří nadějné podle chybějících požadavků).',
           'React 19 + Vite + Tailwind v4, REST API v Hono jako Cloudflare Pages Function, data v Cloudflare D1, TypeScript se sdílenými typy; na každý push běží v CI testy API (Postman/Newman) i boardu (Playwright) proti čerstvě sestavené kopii s vlastní databází.',
         ],
       },
       {
         name: 'Automatizace',
         when: '2026',
-        link: 'erikkarasek.cz/automation',
+        link: 'github.com/ErikKarasek/devlog',
+        study: 'erikkarasek.cz/automation',
         points: [
           'Sada vlastních AI agentů, která dělá rutinu kolem hledání práce a projektů: v noci sepíše, co jsem ten den udělal, a zkontroluje nový kód, přes den čte odpovědi firem z e-mailu a ráno posílá přehled nových nabídek.',
           'Agent vždy jen navrhne, potvrzuje člověk: všechno chodí do Telegramu s tlačítky a bez stisknutí se v evidenci přihlášek nic nezmění.',
@@ -130,39 +141,17 @@ export const cv = {
         study: 'erikkarasek.cz/nexus-grind',
         points: [
           'Cross-platform produktivní tracker (úkoly, návyky, projekty, spánek/wellness) s gamifikovaným companion stromem a AI Coachem.',
-          'Desktop (React + Vite + Tauri) i mobil (React Native / Expo), sdílená doménová logika s unit testy, vícejazyčnost CS/EN.',
-          'Local-first s volitelným cloud syncem přes Supabase; monorepo (pnpm), CI/CD buildí Windows installer, macOS app i Android APK.',
-        ],
-      },
-      {
-        name: 'Monster-Watch',
-        when: '2026',
-        link: 'monster-watch.onrender.com',
-        study: 'erikkarasek.cz/monster-watch',
-        points: [
-          'Appka, která hlídá ceny energetických nápojů v akci po celé ČR a srovná nejlevnější variantu.',
-          'React Native (Expo), backend v Pythonu (Flask), web scraper a JSON API.',
-        ],
-      },
-      {
-        name: 'LolStats',
-        when: '2026',
-        link: 'lolstats.erikkarasek2005.workers.dev',
-        study: 'erikkarasek.cz/lol-stats',
-        points: [
-          'Osobní webová aplikace pro statistiky League of Legends: historie zápasů, výkonnost šampionů, win rate, KDA, tier list.',
-          'Integrace s Riot Games API (Match v5, Summoner v4, League v4, Account v1), nasazeno na Cloudflare Workers, data se zpracují v prohlížeči.',
+          'Desktop (React + Tauri) i mobil (React Native / Expo) nad sdílenou logikou s unit testy; local-first s volitelným syncem přes Supabase, CI/CD buildí Windows installer, macOS app i Android APK.',
         ],
       },
     ],
     skills: [
       ['Umělá inteligence', 'Vlastní AI agenti a asistenti na Cloudflare Workers AI (tool calling, prompt engineering); Claude a Gemini CLI při vývoji.'],
-      ['Programování', 'Node.js, Python, Java, React; web scraping, JSON/REST API, datové struktury.'],
+      ['Programování', 'TypeScript, Node.js, Python, React; Swift/SwiftUI a Rust ve vlastních appkách; web scraping, JSON/REST API.'],
       ['Cloud & web', 'Cloudflare Workers, REST API integrace, client-side aplikace.'],
       ['Testování SW', 'Test cases, testovací scénáře, DEV prostředí, Jira.'],
       ['IT podpora', 'Helpdesk L1, ticketování (JIRA), eskalace incidentů.'],
-      ['Systémy & správa', 'Windows 10/11, základy Active Directory, RDP, TeamViewer, LAN/Wi-Fi troubleshooting.'],
-      ['Hardware', 'Diagnostika závad, výměna komponent, inventarizace stanic.'],
+      ['Systémy & hardware', 'Windows 10/11, základy Active Directory, RDP, TeamViewer, LAN/Wi-Fi troubleshooting; diagnostika závad a výměna komponent.'],
       ['3D grafika', 'Blender: modelování, textury, základní animace.'],
     ],
     education: [
@@ -171,8 +160,7 @@ export const cv = {
     ],
     other: [
       ['Angličtina', 'B2, Cambridge English First (FCE)'],
-      ['Řidičský průkaz', 'skupina B'],
-      ['Zájmy', 'hardware a PC sestavy, AI a moderní technologie, fitness, móda a styl'],
+      ['Ostatní', 'řidičský průkaz skupiny B; hardware a PC sestavy, AI, fitness'],
     ],
   },
 
@@ -195,12 +183,11 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      "A junior developer who builds AI automations and applications from idea to deployment. My own projects include AI agents on Cloudflare Workers AI that read job postings every morning, score them and prepare the paperwork, and Nexus Grind, a cross-platform app (React, TypeScript, Tauri, React Native). I check what the model returns with code rather than trusting it blindly. I work as an analyst / tester on the ENTSO-E project at Unicorn, previously IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
+      "A junior developer who builds AI automations and applications from idea to deployment. I run my own AI agents that read job postings and watch over my projects, plus a dashboard for them on Mac and iPhone. I check what the model returns with code rather than trusting it blindly. I work as an analyst / tester on the ENTSO-E project at Unicorn, previously IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
     strengths: [
       ['Fast learner, self-driven', 'I find my way around new technologies and processes quickly.'],
       ['AI-first', 'I use AI every day to build faster and better.'],
       ['Reliable, detail-minded', 'I see things through to the end.'],
-      ['Love to build', 'in my free time I take my own projects from idea to deployment.'],
     ],
     jobs: [
       {
@@ -249,13 +236,24 @@ export const cv = {
     ],
     projects: [
       {
+        name: 'Wisp',
+        when: '2026',
+        link: 'github.com/ErikKarasek/wisp',
+        study: 'erikkarasek.cz/wisp',
+        points: [
+          'A dashboard for my own AI agents: a Tauri Mac app (TypeScript + Rust) with an overlay in the notch, and a native SwiftUI iPhone client with widgets and a Live Activity in the Dynamic Island.',
+          'Claude, ChatGPT (Codex CLI) and Gemini side by side with usage and reset times; agent steps streamed live through hooks, and a Claude permission answered from the notch, lock screen or Telegram.',
+          'A Cloudflare Worker with D1 as the relay between Mac and phone (no direct connection); a bearer token compared in constant time, hooks with a per-install secret, tokens in the Keychain.',
+          'Keeps the Mac awake while agents work, lid closed too (a sudoers rule for sleep only), with battery and CPU temperature safeties; 20 animated characters, editable from the phone too.',
+        ],
+      },
+      {
         name: 'Job Tracker',
         when: '2026',
         link: 'job-tracker-10s.pages.dev',
         study: 'erikkarasek.cz/job-tracker',
         points: [
-          'Kanban tool for tracking job applications: a card per role, moving wishlist → applied → interview → offer/rejected.',
-          'Stats built on the history of stage changes: a funnel by stage, a per-day timeline and a watch on applications with no activity.',
+          'A board for tracking applications (wishlist → applied → interview → offer/rejected) with stats built on the history of stage changes: a funnel, a per-day graph and a watch on applications gone quiet.',
           'Three AI agents on Cloudflare Workers AI (tool calling): a posting link becomes a card with a fit score and a cover letter, a résumé reordered for that role, and a pre-interview brief on the company.',
           'A scout on a cron trigger: every morning it reads Jobs.cz and the Labour Office\'s open data, cheap filters drop senior and non-IT postings, and scoring runs in two rounds (a small model ranks, a larger one re-measures the promising ones against missing requirements).',
           'React 19 + Vite, a Hono REST API as a Cloudflare Pages Function, data in D1, TypeScript with shared types; every push runs API tests (Postman/Newman) and UI tests (Playwright) in CI against a fresh build with its own database.',
@@ -264,7 +262,8 @@ export const cv = {
       {
         name: 'Automation',
         when: '2026',
-        link: 'erikkarasek.cz/automation',
+        link: 'github.com/ErikKarasek/devlog',
+        study: 'erikkarasek.cz/automation',
         points: [
           'AI agents that handle the routine around my job hunt and projects: at night they write up what I did and review the new code, by day they read companies\' replies, and in the morning they send a digest of new postings.',
           'An agent only ever proposes and a human confirms: everything arrives in Telegram with buttons, and nothing changes in the application board until one is pressed.',
@@ -289,39 +288,17 @@ export const cv = {
         study: 'erikkarasek.cz/nexus-grind',
         points: [
           'Cross-platform productivity tracker (tasks, habits, projects, sleep/wellness) with a gamified companion tree and an AI Coach.',
-          'Desktop (React + Vite + Tauri) and mobile (React Native / Expo), shared domain logic with unit tests, CS/EN localisation.',
-          'Local-first with optional cloud sync via Supabase; pnpm monorepo, CI/CD builds the Windows installer, macOS app and Android APK.',
-        ],
-      },
-      {
-        name: 'Monster-Watch',
-        when: '2026',
-        link: 'monster-watch.onrender.com',
-        study: 'erikkarasek.cz/monster-watch',
-        points: [
-          'An app that tracks energy-drink prices on sale across the country and compares the cheapest option.',
-          'React Native (Expo), a Python (Flask) backend, a web scraper and a JSON API.',
-        ],
-      },
-      {
-        name: 'LolStats',
-        when: '2026',
-        link: 'lolstats.erikkarasek2005.workers.dev',
-        study: 'erikkarasek.cz/lol-stats',
-        points: [
-          'Personal web app for League of Legends stats: match history, champion performance, win rate, KDA, tier list.',
-          'Riot Games API integration (Match v5, Summoner v4, League v4, Account v1), deployed on Cloudflare Workers, all data processed in the browser.',
+          'Desktop (React + Tauri) and mobile (React Native / Expo) over shared logic with unit tests; local-first with optional Supabase sync, CI/CD builds the Windows installer, macOS app and Android APK.',
         ],
       },
     ],
     skills: [
       ['AI', 'My own AI agents and assistants on Cloudflare Workers AI (tool calling, prompt engineering); Claude and Gemini CLI while developing.'],
-      ['Programming', 'Node.js, Python, Java, React; web scraping, JSON/REST APIs, data structures.'],
+      ['Programming', 'TypeScript, Node.js, Python, React; Swift/SwiftUI and Rust in my own apps; web scraping, JSON/REST APIs.'],
       ['Cloud & web', 'Cloudflare Workers, REST API integrations, client-side apps.'],
       ['Software testing', 'Test cases, test scenarios, DEV environments, Jira.'],
       ['IT support', 'L1 helpdesk, ticketing (JIRA), incident escalation.'],
-      ['Systems', 'Windows 10/11, Active Directory basics, RDP, TeamViewer, LAN/Wi-Fi troubleshooting.'],
-      ['Hardware', 'Fault diagnosis, component replacement, workstation inventory.'],
+      ['Systems & hardware', 'Windows 10/11, Active Directory basics, RDP, TeamViewer, LAN/Wi-Fi troubleshooting; fault diagnosis and component replacement.'],
       ['3D graphics', 'Blender: modelling, texturing, basic animation.'],
     ],
     education: [
@@ -330,8 +307,7 @@ export const cv = {
     ],
     other: [
       ['English', 'B2, Cambridge English First (FCE)'],
-      ['Driving licence', 'category B'],
-      ['Interests', 'PC hardware and builds, AI and new tech, fitness, fashion and style'],
+      ['Other', 'driving licence category B; PC hardware and builds, AI and new tech, fitness, fashion and style'],
     ],
   },
 }
