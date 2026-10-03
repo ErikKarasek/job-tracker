@@ -8,8 +8,8 @@
 //   - the brief's answers must stand on the profile's real experience.
 import { PROFILE } from '../agent/profile'
 import { htmlToText } from '../agent/tools'
+import { chat, type ChatMessage, type Llm } from '../ai/chat'
 
-const MODEL = '@cf/mistralai/mistral-small-3.1-24b-instruct'
 const MAX_TURNS = 7
 const MAX_PAGES = 4
 const PAGE_CHARS = 6_000
@@ -90,13 +90,7 @@ Rules:
 Erik's profile:
 ${PROFILE}`
 
-type RawToolCall = { id: string; function: { name: string; arguments: unknown } }
-type ChatMessage =
-  | { role: 'system' | 'user'; content: string }
-  | { role: 'assistant'; content: string | null; tool_calls?: RawToolCall[] }
-  | { role: 'tool'; tool_call_id: string; content: string }
-
-export async function writeBrief(ai: Ai, company: string, postingUrl: string, postingText?: string): Promise<{ brief: Brief; neurons: number }> {
+export async function writeBrief(env: Llm, company: string, postingUrl: string, postingText?: string): Promise<{ brief: Brief; neurons: number }> {
   const allowed = new Set<string>()
   const allow = (url: string) => {
     const h = hostOf(url)
@@ -117,26 +111,22 @@ export async function writeBrief(ai: Ai, company: string, postingUrl: string, po
         : `The posting for ${company}: ${postingUrl}`,
     },
   ]
+  const ask = chat(env, 'smart')
   let neurons = 0
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     // On the last turn only submit_brief is offered, so the run always ends with a brief.
     const last = turn === MAX_TURNS - 1 || read.length >= MAX_PAGES
-    const out = (await ai.run(MODEL as keyof AiModels, {
-      messages,
-      tools: last ? [TOOLS[1]] : TOOLS,
-      max_tokens: 2_500,
-    } as never)) as { choices?: { message?: { content?: string | null; tool_calls?: RawToolCall[] } }[]; usage?: { neurons?: number } }
-    neurons += out.usage?.neurons ?? 0
-    const message = out.choices?.[0]?.message
-    const calls = message?.tool_calls ?? []
+    const message = await ask({ messages, tools: last ? [TOOLS[1]] : TOOLS, max_tokens: 2_500 })
+    neurons += message.neurons
+    const calls = message.tool_calls
 
     if (calls.length === 0) {
-      messages.push({ role: 'assistant', content: message?.content ?? '' })
+      messages.push({ role: 'assistant', content: message.content ?? '' })
       messages.push({ role: 'user', content: 'Do not answer in text. Use the tools; finish with submit_brief.' })
       continue
     }
-    messages.push({ role: 'assistant', content: message?.content ?? null, tool_calls: calls })
+    messages.push({ role: 'assistant', content: message.content, tool_calls: calls })
 
     for (const call of calls) {
       const args = parse(call.function.arguments)

@@ -78,6 +78,13 @@ export interface Env {
    * should be read-only, not open to the world.
    */
   ADMIN_KEY?: string
-  /** Workers AI, for the job-posting agent (server/agent/). No key: it runs on this account. */
+  /** Workers AI, the fallback for every AI feature (server/ai/chat.ts). No key: it runs on this account. */
   AI?: Ai
+  /**
+   * Gemini API key from Google AI Studio (free tier), tried before Workers AI. Without it
+   * everything runs on Workers AI as before. Set it with:
+   * wrangler pages secret put GEMINI_API_KEY --project-name job-tracker
+   * wrangler secret put GEMINI_API_KEY -c scout/wrangler.toml
+   */
+  GEMINI_API_KEY?: string
 }

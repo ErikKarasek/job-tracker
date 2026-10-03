@@ -8,6 +8,7 @@
 // search card. The model only judges fit, which is the one thing code cannot. Cover letters,
 // which need the better model, are written when Erik opens a suggestion, not for every posting.
 import { PROFILE } from '../agent/profile'
+import { chat, type Llm } from '../ai/chat'
 import { capScore } from './cap'
 
 export { capScore }
@@ -17,8 +18,8 @@ export { capScore }
 // more are scored again by Mistral (~150 neurons), whose gaps held up on the same postings (it
 // named C/C++, .NET and SQL Server where they were required). The number Erik sees at the top of
 // the inbox is Mistral's; further down, the ranking is all that matters.
-const CHEAP = '@cf/meta/llama-3.1-8b-instruct-fp8-fast'
-const PRECISE = '@cf/mistralai/mistral-small-3.1-24b-instruct'
+// Since moving to Gemini (server/ai/chat.ts) the tiers are Flash-Lite and Flash, and these two are
+// the fallback.
 export const PRECISE_FROM = 65
 
 const SCHEMA = {
@@ -43,18 +44,17 @@ ${PROFILE}`
 
 export type FitScore = { fitScore: number; fitSummary: string; neurons: number; modelScore: number; missingMustHaves: string[]; yearsRequired: number }
 
-export async function scoreFit(ai: Ai, posting: string, precise = false): Promise<FitScore> {
-  const out = (await ai.run((precise ? PRECISE : CHEAP) as keyof AiModels, {
+export async function scoreFit(env: Llm, posting: string, precise = false): Promise<FitScore> {
+  const out = await chat(env, precise ? 'smart' : 'cheap')({
     messages: [
       { role: 'system', content: SYSTEM },
       { role: 'user', content: `Job posting:\n\n${posting.slice(0, 8_000)}` },
     ],
     max_tokens: 350,
-    response_format: { type: 'json_schema', json_schema: SCHEMA },
-  } as never)) as { response?: unknown; choices?: { message?: { content?: unknown } }[]; usage?: { neurons?: number } }
+    schema: SCHEMA,
+  })
 
-  const raw = out.response ?? out.choices?.[0]?.message?.content
-  const data = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+  const data = JSON.parse(out.content ?? 'null') as {
     fitScore?: unknown
     fitSummary?: unknown
     missingMustHaves?: unknown
@@ -71,7 +71,7 @@ export async function scoreFit(ai: Ai, posting: string, precise = false): Promis
     .slice(0, 5)
   const years = typeof data.yearsRequired === 'number' && Number.isFinite(data.yearsRequired) ? data.yearsRequired : 0
   const fitScore = capScore(modelScore, missingMustHaves.length, years)
-  return { fitScore, fitSummary, neurons: Math.round(out.usage?.neurons ?? 0), modelScore, missingMustHaves, yearsRequired: years }
+  return { fitScore, fitSummary, neurons: out.neurons, modelScore, missingMustHaves, yearsRequired: years }
 }
 
 /** Jobs.cz states pay as "Plat 30 000 – 40 000 Kč" (or CZK, or a single figure). Null when it does not. */

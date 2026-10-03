@@ -9,6 +9,7 @@
 // cap, then one digest e-mail. Nothing reaches the board without Erik: scored postings wait in
 // the inbox for him to accept or dismiss.
 import { overBudget, recordSpend } from '../ai/budget'
+import type { Llm } from '../ai/chat'
 import { fetchJobPosting } from '../agent/tools'
 import type { Env } from '../types'
 import { sendDigest, sendMail } from './email'
@@ -26,7 +27,7 @@ import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, looksLikeIt, parseResults, searc
 const DAILY_AGENT_RUNS = 30
 
 export type TickResult = { step: 'remind' | 'search' | 'score' | 'followup' | 'digest' | 'idle'; detail: string }
-export type ScoutEnv = Env & TelegramEnv & { AI: Ai; RESEND_API_KEY?: string; NOTIFY_EMAIL?: string; DIGEST_EMAIL?: string }
+export type ScoutEnv = Env & TelegramEnv & Llm & { RESEND_API_KEY?: string; NOTIFY_EMAIL?: string; DIGEST_EMAIL?: string }
 
 /** Prague-local calendar day, so "today" turns over at midnight here, not in UTC. */
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Prague' })
@@ -350,7 +351,7 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   await countRun()
   // A small model judges the fit; code reads the salary (see score.ts for why). The cover
   // letter is written with the better model only when Erik opens the suggestion and asks.
-  let fit = await scoreFit(env.AI, page.text)
+  let fit = await scoreFit(env, page.text)
   let neurons = fit.neurons
   // Promising postings get the second, stricter opinion (score.ts explains the two tiers). A random
   // tenth of the rest get it too: a good posting the small model underrates would otherwise never be
@@ -360,7 +361,7 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   const audit = !promising && Math.random() < AUDIT_RATE
   if (promising || audit) {
     const small = fit.modelScore
-    fit = await scoreFit(env.AI, page.text, true)
+    fit = await scoreFit(env, page.text, true)
     neurons += fit.neurons
     if (audit) await logAudit(env, id, small, fit.fitScore)
   }
