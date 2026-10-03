@@ -54,18 +54,18 @@ test('a model at its limit hands over to the next one, and the run stays on it',
   const asked = fakeGemini({ 'gemini-3.8-flash': 429 })
   const w = fakeWorkers()
   const ask = chat({ AI: w.AI, GEMINI_API_KEY: 'k' }, 'smart')
-  assert.equal((await ask(req)).via, 'gemini-2.5-flash')
-  assert.equal((await ask(req)).via, 'gemini-2.5-flash')
-  assert.deepEqual(asked, ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash'])
+  assert.equal((await ask(req)).via, 'gemini-3.6-flash')
+  assert.equal((await ask(req)).via, 'gemini-3.6-flash')
+  assert.deepEqual(asked, ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.6-flash'])
 })
 
 test('past the last Gemini model it is Workers AI, for the rest of the run', async () => {
-  const asked = fakeGemini({ 'gemini-3.5-flash-lite': 429, 'gemini-2.5-flash-lite': 500 })
+  const asked = fakeGemini({ 'gemini-3.5-flash-lite': 429, 'gemini-3.1-flash-lite': 500 })
   const w = fakeWorkers()
   const ask = chat({ AI: w.AI, GEMINI_API_KEY: 'k' }, 'cheap')
   assert.equal((await ask(req)).content, 'from workers')
   assert.equal((await ask(req)).content, 'from workers')
-  assert.deepEqual(asked, ['gemini-3.5-flash-lite', 'gemini-2.5-flash-lite'])
+  assert.deepEqual(asked, ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'])
   assert.deepEqual(w.calls, ['@cf/meta/llama-3.1-8b-instruct-fp8-fast', '@cf/meta/llama-3.1-8b-instruct-fp8-fast'])
 })
 
