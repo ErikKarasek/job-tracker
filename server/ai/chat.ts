@@ -41,10 +41,12 @@ export type ChatReply = {
   via: string
 }
 
-// Newest first. Each has its own free-tier limit, so the second also adds headroom.
+// Newest first. Each has its own free-tier limit, so the others also add headroom. Checked
+// 2026-10-03 with an AI Studio key: the 2.5 models are closed to new keys (404), and 3.7 Flash
+// answered 503 (high demand), so it is left out.
 const GEMINI: Record<Tier, string[]> = {
-  smart: ['gemini-3.8-flash', 'gemini-2.5-flash'],
-  cheap: ['gemini-3.5-flash-lite', 'gemini-2.5-flash-lite'],
+  smart: ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'],
+  cheap: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
 }
 // What ran before Gemini. Mistral won a side-by-side of five tool-calling models on speed and
 // Czech; Llama is the cheap first pass (score.ts has the measurements).
