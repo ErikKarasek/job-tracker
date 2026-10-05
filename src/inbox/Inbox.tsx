@@ -11,12 +11,42 @@ const SORTS = {
   score: 'Fit score',
   newest: 'Newest',
   salary: 'Salary',
+  place: 'Place',
 } as const
 type Sort = keyof typeof SORTS
 const SORT_KEY = 'inbox-sort'
 
+// The two towns Erik can reach without a car, the same ones the scout keeps
+// (server/scout/commute.ts). A posting can be in more than one place — remote work advertised in
+// Hradec Králové — so it carries every place that fits, and 'other' only when none do.
+const PLACES = {
+  hradec: 'Hradec Králové',
+  pardubice: 'Pardubice',
+  remote: 'Remote',
+  other: 'Somewhere else',
+} as const
+type Place = keyof typeof PLACES
+const PLACES_KEY = 'inbox-places'
+// Listed nearest first, which is also the order the place sort groups by.
+const PLACE_ORDER = Object.keys(PLACES) as Place[]
+
+function placesOf(s: Suggestion): Place[] {
+  const where = s.location ?? ''
+  const found: Place[] = []
+  if (/Hradec Králové/i.test(where)) found.push('hradec')
+  if (/\bPardubice\b/i.test(where)) found.push('pardubice')
+  if (s.remote) found.push('remote')
+  return found.length > 0 ? found : ['other']
+}
+
 function sorted(items: Suggestion[], sort: Sort): Suggestion[] {
   if (sort === 'recommended') return items
+  if (sort === 'place') {
+    // A posting sorts by its nearest place; sort is stable, so within one place the recommended
+    // order survives — this groups the list rather than reshuffling it.
+    const rank = (s: Suggestion) => Math.min(...placesOf(s).map((p) => PLACE_ORDER.indexOf(p)))
+    return [...items].sort((a, b) => rank(a) - rank(b))
+  }
   const value = (s: Suggestion) =>
     sort === 'score' ? s.fitScore : sort === 'salary' ? (s.salaryMax ?? s.salaryMin) : Date.parse(s.foundAt)
   return [...items].sort((a, b) => {
@@ -36,6 +66,16 @@ function savedSort(): Sort {
   }
 }
 
+/** Nothing ticked means no filter, which is where a fresh browser starts. */
+function savedPlaces(): Place[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PLACES_KEY) ?? '[]') as unknown
+    return Array.isArray(raw) ? raw.filter((p): p is Place => typeof p === 'string' && p in PLACES) : []
+  } catch {
+    return []
+  }
+}
+
 /**
  * What the scout found (server/scout/): postings from Jobs.cz, scored by the agent, best fit
  * first. Accept turns one into a Wishlist card; dismiss drops it. Nothing reaches the board
@@ -50,6 +90,7 @@ export function Inbox() {
   const [lastRun, setLastRun] = useState<string | null>(null)
   const [spend, setSpend] = useState<{ total: number; byFeature: Record<string, number> } | null>(null)
   const [sort, setSort] = useState<Sort>(savedSort)
+  const [places, setPlaces] = useState<Place[]>(savedPlaces)
 
   function changeSort(next: Sort) {
     setSort(next)
@@ -58,6 +99,19 @@ export function Inbox() {
     } catch {
       // Private window: the choice just isn't remembered.
     }
+  }
+
+  function pickPlaces(next: Place[]) {
+    setPlaces(next)
+    try {
+      localStorage.setItem(PLACES_KEY, JSON.stringify(next))
+    } catch {
+      // Private window: the choice just isn't remembered.
+    }
+  }
+
+  function togglePlace(place: Place) {
+    pickPlaces(places.includes(place) ? places.filter((p) => p !== place) : [...places, place])
   }
 
   const load = useCallback(async () => {
@@ -116,13 +170,19 @@ export function Inbox() {
     }
   }
 
+  const visible = places.length === 0 ? items : items.filter((s) => placesOf(s).some((p) => places.includes(p)))
+
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-semibold text-xl text-ink">Inbox</h1>
           <p className="text-sm text-mute">
-            {loading ? 'Loading…' : `${items.length} to review${queued ? `, ${queued} waiting to be scored` : ''}. The scout searches Jobs.cz every morning.`}
+            {loading
+              ? 'Loading…'
+              : `${places.length > 0 ? `${visible.length} of ${items.length}` : items.length} to review${
+                  queued ? `, ${queued} waiting to be scored` : ''
+                }. The scout searches Jobs.cz every morning.`}
           </p>
           {spend && (
             <p className="font-mono text-xs text-mute" title="Workers AI neurons spent today (UTC day); 10 000 a day are included in the plan">
@@ -156,6 +216,33 @@ export function Inbox() {
       <Followups />
 
       {items.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Filter postings by place">
+          <span className="mr-1 text-mute">Place</span>
+          {PLACE_ORDER.map((key) => {
+            const count = items.filter((s) => placesOf(s).includes(key)).length
+            const on = places.includes(key)
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => togglePlace(key)}
+                aria-pressed={on}
+                className={`rounded-md border px-2.5 py-1 ${on ? 'border-signal/60 bg-signal/10 text-signal' : 'border-line text-ink-2 hover:text-ink'}`}
+              >
+                {on ? '✓ ' : ''}
+                {PLACES[key]} <span className="font-mono text-xs text-mute">{count}</span>
+              </button>
+            )
+          })}
+          {places.length > 0 && (
+            <button type="button" onClick={() => pickPlaces([])} className="px-1.5 py-1 text-mute underline hover:text-ink">
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+
+      {items.length > 1 && (
         <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Sort postings">
           <span className="mr-1 text-mute">Sort by</span>
           {(Object.keys(SORTS) as Sort[]).map((key) => (
@@ -173,11 +260,17 @@ export function Inbox() {
       )}
 
       <ul className="flex flex-col gap-3">
-        {sorted(items, sort).map((s) => (
+        {sorted(visible, sort).map((s) => (
           <SuggestionCard key={s.id} s={s} onDecide={decide} />
         ))}
       </ul>
-      {!loading && items.length === 0 && <p className="text-sm text-mute">Nothing to review. New postings arrive each morning.</p>}
+      {!loading && visible.length === 0 && (
+        <p className="text-sm text-mute">
+          {items.length > 0
+            ? 'Nothing in the places you ticked. Untick one to see the rest.'
+            : 'Nothing to review. New postings arrive each morning.'}
+        </p>
+      )}
     </div>
   )
 }
