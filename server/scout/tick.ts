@@ -285,6 +285,7 @@ async function insertFound(env: Env, found: Candidate[]) {
     ),
   )
   const inserts = found
+    .filter((f) => !EXCLUDED_COMPANIES.test(f.company ?? ''))
     // Too far without a car (see commute.ts); dropped before it costs an agent run.
     .filter((f) => reachable(f.location, f.remote))
     .filter((f) => !onBoard.has(f.url))
@@ -317,6 +318,9 @@ async function insertFound(env: Env, found: Candidate[]) {
   const results = await env.DB.batch(inserts)
   return results.reduce((n, r) => n + (r.meta.changes ?? 0), 0)
 }
+
+// Employers never to suggest, on any source: Unicorn is where Erik works now (asked 2026-10-05).
+const EXCLUDED_COMPANIES = /\bunicorn\b/i
 
 function triaged(title: string): [string, number] {
   const t = triage(title)
