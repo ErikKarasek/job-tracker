@@ -3,6 +3,7 @@
 // never executes anything itself; it asks, and run.ts calls the function here.
 import type { Env } from '../types'
 import { SERVER_DRAWN_HOSTS, UU_HOSTS, uuPageUrl, uuPostingText } from '../scout/careers'
+import { jobsWidgetPosting } from '../scout/jobs-widget'
 
 export type ToolCall = { name: string; arguments: Record<string, unknown> }
 
@@ -39,6 +40,7 @@ export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ 
   const uu = await uuPosting(url)
   if (uu) return uu
   let html: string
+  let finalUrl = url
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JobTrackerAgent/1.0)', 'Accept-Language': 'cs,en;q=0.8' },
@@ -47,10 +49,20 @@ export async function fetchJobPosting(args: Record<string, unknown>): Promise<{ 
     })
     if (!res.ok) return { ok: false, reason: `The page answered HTTP ${res.status}.` }
     html = await res.text()
+    finalUrl = res.url || url
   } catch (err) {
     return { ok: false, reason: `Could not load the page: ${String(err)}` }
   }
-  const text = htmlToText(html)
+  let text = htmlToText(html)
+  // A Jobs.cz posting on the employer's own site (jobs-widget.ts) arrives as an empty shell.
+  if (text.length < MIN_POSTING_CHARS) {
+    const widget = await jobsWidgetPosting(finalUrl, html).catch(() => null)
+    if (widget) {
+      const posting = htmlToText(widget)
+      // No menus or footers left in it, so a real posting is shorter than the shell check allows.
+      if (posting.length >= 500) return { ok: true, text: posting.slice(0, MAX_POSTING_CHARS) }
+    }
+  }
   const known = SERVER_DRAWN_HOSTS.includes(new URL(url).hostname)
   if (text.length < (known ? MIN_KNOWN_POSTING_CHARS : MIN_POSTING_CHARS)) {
     return {

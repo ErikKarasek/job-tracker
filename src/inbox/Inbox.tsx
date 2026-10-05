@@ -4,6 +4,38 @@ import { formatSalary } from '../lib/dates'
 import type { Suggestion } from '../types'
 import { Followups } from './Followups'
 
+// The server's order is the recommended one: AI and development roles lifted over support (see
+// /api/suggestions). The others are plain sorts; postings without a value always go last.
+const SORTS = {
+  recommended: 'Recommended',
+  score: 'Fit score',
+  newest: 'Newest',
+  salary: 'Salary',
+} as const
+type Sort = keyof typeof SORTS
+const SORT_KEY = 'inbox-sort'
+
+function sorted(items: Suggestion[], sort: Sort): Suggestion[] {
+  if (sort === 'recommended') return items
+  const value = (s: Suggestion) =>
+    sort === 'score' ? s.fitScore : sort === 'salary' ? (s.salaryMax ?? s.salaryMin) : Date.parse(s.foundAt)
+  return [...items].sort((a, b) => {
+    const va = value(a)
+    const vb = value(b)
+    if (va == null || vb == null) return va == null ? (vb == null ? 0 : 1) : -1
+    return vb - va
+  })
+}
+
+function savedSort(): Sort {
+  try {
+    const v = localStorage.getItem(SORT_KEY)
+    return v && v in SORTS ? (v as Sort) : 'recommended'
+  } catch {
+    return 'recommended'
+  }
+}
+
 /**
  * What the scout found (server/scout/): postings from Jobs.cz, scored by the agent, best fit
  * first. Accept turns one into a Wishlist card; dismiss drops it. Nothing reaches the board
@@ -17,6 +49,16 @@ export function Inbox() {
   const [running, setRunning] = useState<string | null>(null)
   const [lastRun, setLastRun] = useState<string | null>(null)
   const [spend, setSpend] = useState<{ total: number; byFeature: Record<string, number> } | null>(null)
+  const [sort, setSort] = useState<Sort>(savedSort)
+
+  function changeSort(next: Sort) {
+    setSort(next)
+    try {
+      localStorage.setItem(SORT_KEY, next)
+    } catch {
+      // Private window: the choice just isn't remembered.
+    }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -113,8 +155,25 @@ export function Inbox() {
 
       <Followups />
 
+      {items.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Sort postings">
+          <span className="mr-1 text-mute">Sort by</span>
+          {(Object.keys(SORTS) as Sort[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => changeSort(key)}
+              aria-pressed={sort === key}
+              className={`rounded-md border px-2.5 py-1 ${sort === key ? 'border-signal/60 bg-signal/10 text-signal' : 'border-line text-ink-2 hover:text-ink'}`}
+            >
+              {SORTS[key]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <ul className="flex flex-col gap-3">
-        {items.map((s) => (
+        {sorted(items, sort).map((s) => (
           <SuggestionCard key={s.id} s={s} onDecide={decide} />
         ))}
       </ul>
@@ -143,7 +202,16 @@ function SuggestionCard({ s, onDecide }: { s: Suggestion; onDecide: (id: string,
 
   return (
     <li className="flex gap-4 rounded-lg border border-line bg-surface-2 p-4">
-      <p className={`w-12 shrink-0 font-mono text-2xl font-semibold ${tone}`}>{s.fitScore ?? '?'}</p>
+      {s.fitScore != null ? (
+        <p className={`w-12 shrink-0 font-mono text-2xl font-semibold ${tone}`}>{s.fitScore}</p>
+      ) : (
+        // No score: the scout could not read the posting (the reason is in fitSummary below).
+        <p className="w-12 shrink-0 pt-1 font-mono text-xs leading-tight text-mute" title="Not scored: the posting could not be read automatically">
+          not
+          <br />
+          scored
+        </p>
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <div>
           <a href={s.jobUrl} target="_blank" rel="noreferrer" className="font-semibold text-ink hover:text-signal">
