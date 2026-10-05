@@ -342,8 +342,15 @@ async function score(env: ScoutEnv, id: string, url: string, countRun: () => Pro
   // pages drawn with JavaScript, and asking the agent to find that out cost a turn each time.
   const page = held?.posting_text ? { ok: true as const, text: held.posting_text } : await fetchJobPosting({ url })
   if (!page.ok) {
-    await env.DB.prepare(`UPDATE suggestions SET status = 'new', fit_summary = ?, scored_at = ? WHERE id = ?`)
-      .bind('Not scored: the posting page cannot be read automatically. Open it to judge it yourself.', now, id)
+    // A posting taken down since the search found it is not worth a look.
+    const gone = /HTTP (404|410)\b/.test(page.reason)
+    await env.DB.prepare(`UPDATE suggestions SET status = ?, fit_summary = ?, scored_at = ? WHERE id = ?`)
+      .bind(
+        gone ? 'skipped' : 'new',
+        gone ? 'Not scored: the posting has been taken down.' : 'Not scored: the posting page cannot be read automatically. Open it to judge it yourself.',
+        now,
+        id,
+      )
       .run()
     console.log(`[scout] ${url}: unreadable, no agent run`)
     return false
