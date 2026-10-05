@@ -1,12 +1,13 @@
 // The third source: careers pages of IT employers around Hradec Králové and Pardubice, read
 // directly. Some post there first or only there. Import-free, so the unit tests load it as is.
 //
-// Three ways a page is read, all without a browser:
+// Two ways a page is read, both without a browser:
 // - `prefix`: postings are links one level under a URL prefix (STAPRO, RETIA).
 // - `within`: postings are links inside elements of one class, at no common path (ELDIS puts
 //   them at the site root, /sw-tester).
-// - `uuPage`: sites built on Unicorn's uu5 are drawn with JavaScript, but the data behind a page
-//   comes from a public loadWebPage endpoint as JSON, openings and their places included.
+// Sites built on Unicorn's uu5 are drawn with JavaScript, but the data behind a page comes from a
+// public loadWebPage endpoint as JSON (parseUuJobs, uuPostingText below); the agent reads a
+// pasted spolu-pracujeme.cz link that way. Unicorn's own list is no longer searched.
 // ČEZ is left out: its careers site is kdejinde.jobs.cz, which the Jobs.cz search already covers.
 //
 // The company names match how Jobs.cz writes them, so a role posted in both places is suggested
@@ -16,7 +17,8 @@ export const CAREER_PAGES = [
   { key: 'retia', company: 'RETIA, a.s.', list: 'https://www.mametenaradaru.cz/volne-pozice/', prefix: 'https://www.mametenaradaru.cz/volne-pozice/' },
   // A radar maker: most of its openings are production and engineering, hence itOnly.
   { key: 'eldis', company: 'ELDIS Pardubice, s.r.o', list: 'https://www.eldis.cz/volne-pozice', within: 'blog-title', itOnly: true, location: 'Pardubice' },
-  { key: 'unicorn', company: 'Unicorn', list: 'https://spolu-pracujeme.cz/prehled-pracovnich-pozic', uuPage: 'prehled-pracovnich-pozic' },
+  // Unicorn (spolu-pracujeme.cz, uuPage: 'prehled-pracovnich-pozic') is left out: Erik works
+  // there (EXCLUDED_COMPANIES in tick.ts). The uu5 reading below stays for pasted links.
 ] as const
 export type CareerPage = (typeof CAREER_PAGES)[number]
 
@@ -25,7 +27,7 @@ export type CareerPage = (typeof CAREER_PAGES)[number]
  * there is still a posting: ELDIS writes some in under 2 500 characters, which the agent's
  * JavaScript-shell check (tools.ts) would otherwise turn away.
  */
-export const SERVER_DRAWN_HOSTS: string[] = CAREER_PAGES.filter((p) => !('uuPage' in p)).map((p) => new URL(p.list).hostname)
+export const SERVER_DRAWN_HOSTS: string[] = CAREER_PAGES.map((p) => new URL(p.list).hostname)
 
 export type CareerPosting = { url: string; title: string; company: string; location: string | null; remote: false }
 
@@ -38,14 +40,10 @@ async function get(url: string, what: string) {
 }
 
 export async function fetchCareerPage(page: CareerPage): Promise<CareerPosting[]> {
-  if ('uuPage' in page) {
-    const origin = new URL(page.list).origin
-    return parseUuJobs(await get(uuPageUrl(origin, page.uuPage), `${page.company} careers page`), page.company)
-  }
   return parseCareerLinks(await get(page.list, `${page.company} careers page`), page)
 }
 
-export function parseCareerLinks(html: string, page: Exclude<CareerPage, { uuPage: string }>): CareerPosting[] {
+export function parseCareerLinks(html: string, page: CareerPage): CareerPosting[] {
   const links =
     'within' in page
       ? new RegExp(`class="[^"]*\\b${page.within}\\b[^"]*"[^>]*>\\s*<a\\b[^>]*href="([^"#]+)"[^>]*>([\\s\\S]*?)<\\/a>`, 'gi')
