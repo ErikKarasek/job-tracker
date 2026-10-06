@@ -215,7 +215,7 @@ export function Inbox() {
 
       <Followups />
 
-      {items.length > 1 && (
+      {(places.length > 0 || items.length > 1) && (
         <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Filter postings by place">
           <span className="mr-1 text-mute">Place</span>
           {PLACE_ORDER.map((key) => {
