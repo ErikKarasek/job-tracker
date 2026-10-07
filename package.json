@@ -50,7 +50,8 @@
     "node-forge": "1.4.0",
     "jose": "4.15.9",
     "qs": "6.16.0",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "sharp": "^0.35.5"
   },
   "auditIgnore": {
     "GHSA-qxc2-j82w-r537": "Fixed by patches/postman-collection++@faker-js+faker+5.5.3.patch: postman-collection pins faker 5.5.3 and faker 10 has a different API. Read by the weekly report in ~/Developer/devlog/src/deps.js."
