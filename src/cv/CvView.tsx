@@ -273,11 +273,16 @@ function Sheet({ data }: { data: CvResponse }) {
                   <span className="when">{p.when}</span>
                 </div>
                 <p className="where">
-                  <a href={url(p.link)}>{p.link}</a>
+                  {p.link && <a href={url(p.link)}>{p.link}</a>}
                   {p.study && (
                     <>
-                      {' '}
-                      <b>·</b> {d.studyLabel}: <a href={url(p.study)}>{p.study}</a>
+                      {p.link && (
+                        <>
+                          {' '}
+                          <b>·</b>{' '}
+                        </>
+                      )}
+                      {d.studyLabel}: <a href={url(p.study)}>{p.study}</a>
                     </>
                   )}
                 </p>
