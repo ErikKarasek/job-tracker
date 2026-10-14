@@ -6,6 +6,14 @@ import { api, type CvResponse } from '../lib/api-client'
 // The same look as the general résumé PDFs on erikkarasek.cz (spidey-portfolio/scripts/
 // build-cv.mjs), drawn in the browser so "Save as PDF" in the print dialog makes the file. Chrome
 // keeps the links clickable in the PDF it writes.
+//
+// One column, section by section, like the build on the portfolio. This sheet used to put tech,
+// strengths, skills and education in a sidebar, which looked good on screen and broke automated
+// screening: in the PDF's text a role ended up next to whatever sat beside it, so a parser paired
+// "Analytik / Tester" with the *next* job's employer. Everything runs top to bottom now, and the
+// numbers below are the measured ones from build-cv.mjs, where the pitfalls are written out in full:
+// no negative letter-spacing anywhere (Chrome then drops the spaces from the PDF and a parser reads
+// "ICTTECHNIKL1"), and the space glyph borrowed from Arial.
 const SHEET_CSS = `
 @page { size: A4; margin: 12mm 13mm 11mm }
 @media print {
@@ -17,16 +25,16 @@ const SHEET_CSS = `
   .cv-sheet [contenteditable] { outline: none !important }
 }
 .cv-sheet { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 13mm 14mm; background: #fff; color: #1f2937; box-shadow: 0 10px 40px rgba(0,0,0,.4);
-  font: 500 9.4pt/1.38 SpaceFromArial, Outfit, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
+  font: 500 9.1pt/1.32 SpaceFromArial, Outfit, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact }
 /* Chrome writes Outfit's text without space glyphs, so parsers guess word breaks from the gaps and
    a narrow one read "Juniorvývojář,kterýstaví…". The space alone comes from Arial, which Chrome does
    write; same fix as the portfolio's build-cv.mjs. */
 @font-face { font-family: SpaceFromArial; src: local('Arial'), local('Helvetica'); unicode-range: U+0020 }
 .cv-sheet * { box-sizing: border-box; margin: 0; padding: 0 }
-.cv-sheet header { display: flex; align-items: center; gap: 9mm; padding-bottom: 6mm; border-bottom: 2px solid #a31515 }
-.cv-sheet .photo { width: 34mm; height: 34mm; border-radius: 50%; border: 1.6mm solid #a31515; padding: 1mm; background: #fff; flex: none; box-shadow: 0 0 6mm rgba(163,21,21,.25) }
+.cv-sheet header { display: flex; align-items: center; gap: 8mm; padding-bottom: 4mm; border-bottom: 2px solid #a31515 }
+.cv-sheet .photo { width: 30mm; height: 30mm; border-radius: 50%; border: 1.6mm solid #a31515; padding: 1mm; background: #fff; flex: none; box-shadow: 0 0 6mm rgba(163,21,21,.25) }
 .cv-sheet .photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block }
-.cv-sheet .qr { margin-left: auto; flex: none; text-align: center; font-size: 7pt; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #a31515 }
+.cv-sheet .qr { margin-left: auto; flex: none; text-align: center; font-size: 7pt; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #a31515 }
 .cv-sheet .qr a { display: block; font-size: 8pt; letter-spacing: .02em; text-transform: none }
 /* The red shadow is an image rendered by the portfolio's build-cv.mjs, not a CSS text-shadow:
    Chrome writes text-shadow into the PDF as extra copies of the name, and a résumé parser then
@@ -34,29 +42,28 @@ const SHEET_CSS = `
    would drop the space between the names from the PDF), so the image lines up. */
 .cv-sheet h1 { font-family: SpaceFromArial, Outfit, sans-serif; display: inline-block; padding: 0 3pt 3pt 0; margin-bottom: -3pt; font-size: 27pt; line-height: .95; font-weight: 900; font-style: italic; text-transform: uppercase; color: #111827;
   background: url(https://erikkarasek.cz/img/cv-name-shadow.png) no-repeat 0 0 / 100% 100% }
-.cv-sheet .title { margin-top: 2.5mm; font-size: 10pt; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #a31515 }
-.cv-sheet .contact { margin-top: 2.5mm; font-size: 8.6pt; color: #4b5563; font-weight: 600 }
+.cv-sheet .title { margin-top: 2.2mm; font-size: 9.6pt; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #a31515 }
+.cv-sheet .contact { margin-top: 2.2mm; font-size: 8.6pt; color: #4b5563; font-weight: 600 }
 .cv-sheet a { color: inherit; text-decoration: none }
 .cv-sheet .contact i { font-style: normal; color: #a31515; margin: 0 1.6mm }
-.cv-sheet .cols { display: grid; grid-template-columns: 1fr 62mm; gap: 8mm; margin-top: 6mm }
-.cv-sheet h2 { display: flex; align-items: center; gap: 2mm; font-size: 8.6pt; font-weight: 800; letter-spacing: .22em; text-transform: uppercase; color: #a31515; margin: 4.2mm 0 2.2mm }
+.cv-sheet h2 { display: flex; align-items: center; gap: 2mm; font-size: 8.8pt; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #a31515; margin: 3mm 0 1.4mm }
 .cv-sheet h2 span { width: 3mm; height: 2.2mm; background: #a31515; border-radius: .4mm }
-.cv-sheet section:first-child h2 { margin-top: 0 }
 .cv-sheet h2 { break-after: avoid }
+.cv-sheet main > section:first-child h2 { margin-top: 3.4mm }
 .cv-sheet .profile { color: #374151 }
-.cv-sheet .item { margin-bottom: 3mm; break-inside: avoid }
+.cv-sheet .item { margin-bottom: 2mm; break-inside: avoid }
 .cv-sheet .row { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm }
-.cv-sheet .role { font-weight: 900; font-size: 10.2pt; text-transform: uppercase; letter-spacing: -.01em; color: #111827 }
+/* no letter-spacing on .role: a negative value drops the spaces from the PDF, see build-cv.mjs */
+.cv-sheet .role { font-weight: 900; font-size: 10pt; text-transform: uppercase; color: #111827 }
 .cv-sheet .when { font-size: 8pt; font-weight: 700; color: #a31515; white-space: nowrap }
 .cv-sheet .where { font-size: 8.4pt; color: #6b7280; font-weight: 600; margin: .3mm 0 1.2mm }
-.cv-sheet ul { padding-left: 3.6mm } .cv-sheet li { margin: .5mm 0 } .cv-sheet li::marker { color: #a31515 }
-.cv-sheet aside { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 3mm; padding: 5mm 4.5mm; align-self: start }
-.cv-sheet aside h2 { letter-spacing: .16em }
-.cv-sheet .pair { break-inside: avoid }
+.cv-sheet ul { padding-left: 3.4mm } .cv-sheet li { margin: .25mm 0 } .cv-sheet li::marker { color: #a31515 }
 .cv-sheet .chips { display: flex; flex-wrap: wrap; gap: 1.4mm }
 .cv-sheet .chips b { font-size: 7.8pt; font-weight: 700; color: #a31515; background: #fff; border: 1px solid rgba(163,21,21,.3); border-radius: 1.6mm; padding: .7mm 2mm }
-.cv-sheet dt { font-weight: 800; color: #111827; font-size: 8.8pt } .cv-sheet dd { color: #4b5563; font-size: 8.4pt; margin-bottom: 1.8mm }
-.cv-sheet .edu { margin-bottom: 2.4mm } .cv-sheet .edu b { display: block; font-size: 8.8pt; color: #111827 } .cv-sheet .edu span { display: block; font-size: 8.2pt; color: #6b7280 }
+.cv-sheet .pair { margin-bottom: .75mm; break-inside: avoid; color: #4b5563; font-size: 8.8pt }
+.cv-sheet .pair b { color: #111827; font-weight: 800 }
+.cv-sheet .edu { margin-bottom: 1.2mm; break-inside: avoid }
+.cv-sheet .edu b { font-size: 9pt; color: #111827 } .cv-sheet .edu span { color: #6b7280; font-size: 8.4pt }
 .cv-sheet [contenteditable]:hover, .cv-sheet [contenteditable]:focus { outline: 1px dashed #a31515; outline-offset: 1mm }
 `
 
@@ -210,6 +217,12 @@ function Sheet({ data }: { data: CvResponse }) {
       ))}
     </ul>
   )
+  // One line each, so the PDF's text keeps the label with its own value.
+  const pair = ([k, v]: readonly string[]) => (
+    <p className="pair" key={k}>
+      <b>{k}:</b> {v}
+    </p>
+  )
   const contact: React.ReactNode[] = [
     data.phone,
     <a href={`mailto:${d.email}`}>{d.email}</a>,
@@ -243,108 +256,84 @@ function Sheet({ data }: { data: CvResponse }) {
           <a href={url(d.web)}>{d.web}</a>
         </div>
       </header>
-      <div className="cols">
-        <main>
-          <section>
-            {head(d.labels.profile)}
-            <p className="profile" contentEditable suppressContentEditableWarning>
-              {t.profile}
-            </p>
-          </section>
-          <section>
-            {head(d.labels.experience)}
-            {d.jobs.map((j) => (
-              <div className="item" key={j.role + j.when}>
-                <div className="row">
-                  <span className="role">{j.role}</span>
-                  <span className="when">{j.when}</span>
-                </div>
-                <p className="where">{j.where}</p>
-                {list(j.points)}
-              </div>
+      <main>
+        <section>
+          {head(d.labels.profile)}
+          <p className="profile" contentEditable suppressContentEditableWarning>
+            {t.profile}
+          </p>
+        </section>
+        <section>
+          {head(d.labels.tech)}
+          <div className="chips">
+            {tech.map((x) => (
+              <b key={x}>{x}</b>
             ))}
-          </section>
-          <section>
-            {head(d.labels.projects)}
-            {projects.map((p) => (
-              <div className="item" key={p.name}>
-                <div className="row">
-                  <span className="role">{p.name}</span>
-                  <span className="when">{p.when}</span>
-                </div>
-                <p className="where">
-                  {p.link && <a href={url(p.link)}>{p.link}</a>}
-                  {p.study && (
-                    <>
-                      {p.link && (
-                        <>
-                          {' '}
-                          <b>·</b>{' '}
-                        </>
-                      )}
-                      {d.studyLabel}: <a href={url(p.study)}>{p.study}</a>
-                    </>
-                  )}
-                </p>
-                {list(p.points)}
+          </div>
+        </section>
+        <section>
+          {head(d.labels.experience)}
+          {d.jobs.map((j) => (
+            <div className="item" key={j.role + j.when}>
+              <div className="row">
+                <span className="role">{j.role}</span>
+                <span className="when">{j.when}</span>
               </div>
-            ))}
-          </section>
-        </main>
-        <aside>
-          <section>
-            {head(d.labels.tech)}
-            <div className="chips">
-              {tech.map((x) => (
-                <b key={x}>{x}</b>
-              ))}
+              <p className="where">{j.where}</p>
+              {list(j.points)}
             </div>
-          </section>
-          <section>
-            {head(d.labels.strengths)}
-            <dl>
-              {d.strengths.map(([k, v]) => (
-                <div className="pair" key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-          <section>
-            {head(d.labels.skills)}
-            <dl>
-              {skills.map(([k, v]) => (
-                <div className="pair" key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-          <section>
-            {head(d.labels.education)}
-            {d.education.map((e) => (
-              <div className="edu pair" key={e.what}>
-                <b>{e.what}</b>
-                <span>{e.where}</span>
-                <span>{e.when}</span>
+          ))}
+        </section>
+        <section>
+          {head(d.labels.strengths)}
+          {d.strengths.map(pair)}
+        </section>
+        <section>
+          {head(d.labels.projects)}
+          {projects.map((p) => (
+            <div className="item" key={p.name}>
+              <div className="row">
+                <span className="role">{p.name}</span>
+                <span className="when">{p.when}</span>
               </div>
-            ))}
-          </section>
-          <section>
-            {head(d.labels.other)}
-            <dl>
-              {d.other.map(([k, v]) => (
-                <div className="pair" key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        </aside>
-      </div>
+              <p className="where">
+                {p.link && <a href={url(p.link)}>{p.link}</a>}
+                {p.study && (
+                  <>
+                    {p.link && (
+                      <>
+                        {' '}
+                        <b>·</b>{' '}
+                      </>
+                    )}
+                    {d.studyLabel}: <a href={url(p.study)}>{p.study}</a>
+                  </>
+                )}
+              </p>
+              {list(p.points)}
+            </div>
+          ))}
+        </section>
+        <section>
+          {head(d.labels.skills)}
+          {skills.map(pair)}
+        </section>
+        <section>
+          {head(d.labels.education)}
+          {d.education.map((e) => (
+            <div className="edu" key={e.what}>
+              <p>
+                <b>{e.what}</b>, <span>{e.where}, {e.when}</span>
+              </p>
+              {e.points && list(e.points)}
+            </div>
+          ))}
+        </section>
+        <section>
+          {head(d.labels.other)}
+          {d.other.map(pair)}
+        </section>
+      </main>
     </article>
   )
 }

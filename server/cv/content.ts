@@ -59,35 +59,34 @@ export const cv = {
         points: [
           'Uživatelská podpora 1. úrovně: příjem, řešení a uzavírání incidentů v systému JIRA.',
           'Příprava a konfigurace stanic s Windows, doména přes Active Directory, vzdálená správa přes RDP a TeamViewer.',
+          'Síťová infrastruktura: přepojování ethernetových kabelů v rozvaděči, propojování patch panelů se switchi a dohledávání, která zásuvka patří ke kterému portu.',
+          'Připojování nových stanic a zařízení do sítě, řešení výpadků LAN a Wi-Fi od zásuvky až po stanici.',
           'Diagnostika a oprava hardwaru, evidence a údržba IT vybavení.',
-        ],
-      },
-      {
-        role: 'Specialista zákaznického centra',
-        when: 'prosinec 2025 – únor 2026',
-        where: 'T-Mobile Czech Republic a.s. · Hradec Králové',
-        points: [
-          'Telefonická podpora zákazníků, řešení technických a smluvních požadavků.',
-          'Práce s telekomunikačními zařízeními, tarify a interními CRM systémy.',
-          'Aktivní nabídka produktů a služeb, plnění prodejních cílů.',
         ],
       },
       {
         role: 'Odborná stáž – 3D grafika',
         when: '2024',
         where: 'Erasmus+, Německo',
-        points: ['Tvorba 3D modelů a animací v Blenderu: textury, osvětlení, export pro digitální design.'],
-      },
-      {
-        role: 'Brigádník',
-        when: 'červen 2020 – leden 2024',
-        where: "McDonald's · Hradec Králové",
         points: [
-          'Rychlý provoz, práce v týmu a směny skládané kolem školy.',
+          'Tvorba 3D modelů a animací v Blenderu: textury, osvětlení, export pro digitální design.',
+          'Práce v mezinárodním týmu na zadaných projektech: rozdělení úkolů, průběžné konzultace a předání hotových výstupů.',
+          'Celá stáž i domluva v týmu probíhala v angličtině.',
         ],
       },
     ],
     projects: [
+      {
+        name: 'Automatizace a AI agenti',
+        when: '2026',
+        study: 'erikkarasek.cz/automation',
+        points: [
+          'Takhle pracuju napříč projekty níž: agent jen navrhne, potvrzuje člověk, výstup modelu kontroluje kód a testy, levný model třídí a větší se volá až na to, co projde.',
+          'Sada vlastních AI agentů, která dělá rutinu kolem hledání práce a projektů: v noci sepíše, co jsem ten den udělal, a zkontroluje nový kód, přes den čte odpovědi firem z e-mailu a ráno posílá přehled nových nabídek.',
+          'Všechno chodí do Telegramu s tlačítky a bez stisknutí se v evidenci přihlášek nic nezmění.',
+          'Node.js, Claude CLI, Telegram Bot API, IMAP a plánované úlohy (launchd, Cloudflare Workers); samostatný hlídač hlásí úlohu, která neproběhla, protože tichá chyba je horší než žádný běh.',
+        ],
+      },
       {
         name: 'Wisp',
         when: '2026',
@@ -111,16 +110,6 @@ export const cv = {
           'Tři AI agenti na Cloudflare Workers AI (tool calling): z odkazu na inzerát vznikne karta se skóre shody a průvodním dopisem, životopis přeskládaný na míru roli (kontrolovaný proti skutečnému) a před pohovorem brief o firmě s pravděpodobnými otázkami.',
           'Scout na cron triggeru: ráno sám projde IT obory na Jobs.cz i otevřená data Úřadu práce, levné filtry uberou seniorní a neIT nabídky před voláním modelu a hodnotí se ve dvou kolech (malý model seřadí, větší přeměří nadějné podle chybějících požadavků).',
           'React 19 + Vite + Tailwind v4, REST API v Hono jako Cloudflare Pages Function, data v Cloudflare D1, TypeScript se sdílenými typy; na každý push běží v CI testy API (Postman/Newman) i boardu (Playwright) proti čerstvě sestavené kopii s vlastní databází.',
-        ],
-      },
-      {
-        name: 'Automatizace',
-        when: '2026',
-        study: 'erikkarasek.cz/automation',
-        points: [
-          'Sada vlastních AI agentů, která dělá rutinu kolem hledání práce a projektů: v noci sepíše, co jsem ten den udělal, a zkontroluje nový kód, přes den čte odpovědi firem z e-mailu a ráno posílá přehled nových nabídek.',
-          'Agent vždy jen navrhne, potvrzuje člověk: všechno chodí do Telegramu s tlačítky a bez stisknutí se v evidenci přihlášek nic nezmění.',
-          'Node.js, Claude CLI, Telegram Bot API, IMAP a plánované úlohy (launchd, Cloudflare Workers); samostatný hlídač hlásí úlohu, která neproběhla, protože tichá chyba je horší než žádný běh.',
         ],
       },
       {
@@ -155,11 +144,18 @@ export const cv = {
       ['3D grafika', 'Blender: modelování, textury, základní animace.'],
     ],
     education: [
-      { what: 'Informační technologie a ekonomika (maturita)', where: 'Obchodní akademie T. G. Masaryka, Kostelec nad Orlicí', when: '2021 – 2025' },
-      { what: 'Základní škola', where: 'ZŠ Týniště nad Orlicí', when: '2011 – 2020' },
+      {
+        what: 'Informační technologie a ekonomika (maturita)',
+        where: 'Obchodní akademie T. G. Masaryka, Kostelec nad Orlicí',
+        when: '2021 – 2025',
+        points: [
+          'Programování a vývoj aplikací, databáze a SQL, počítačové sítě a hardware, tvorba webu.',
+          'Ekonomická část oboru: účetnictví, daně, základy práva a chod firmy, takže rozumím i zadání z byznysové strany.',
+        ],
+      },
     ],
     other: [
-      ['Angličtina', 'B2, Cambridge English First (FCE)'],
+      ['Angličtina', 'plynule, denně v práci i v projektech; Cambridge English First (FCE)'],
       ['Ostatní', 'řidičský průkaz skupiny B; hardware a PC sestavy, AI, fitness'],
     ],
   },
@@ -208,33 +204,34 @@ export const cv = {
         points: [
           'First-level user support: taking, resolving and closing incidents in JIRA.',
           'Preparing and configuring Windows workstations, joining the domain via Active Directory, remote support over RDP and TeamViewer.',
+          'Network infrastructure: patching ethernet cables in the rack, wiring patch panels to switches and tracing which wall socket belongs to which port.',
+          'Connecting new workstations and devices to the network, fixing LAN and Wi-Fi outages from the socket all the way to the machine.',
           'Diagnosing and fixing hardware, tracking and maintaining IT equipment.',
-        ],
-      },
-      {
-        role: 'Customer Care Specialist',
-        when: 'December 2025 – February 2026',
-        where: 'T-Mobile Czech Republic a.s. · Hradec Králové',
-        points: [
-          'Phone support for customers, handling technical and contract requests.',
-          'Working with telecom devices, rate plans and internal CRM systems.',
-          'Proactively offering products and services, meeting sales targets.',
         ],
       },
       {
         role: 'Internship – 3D graphics',
         when: '2024',
         where: 'Erasmus+, Germany',
-        points: ['Creating 3D models and animations in Blender: textures, lighting, export for digital design.'],
-      },
-      {
-        role: 'Part-time crew member',
-        when: 'June 2020 – January 2024',
-        where: "McDonald's · Hradec Králové",
-        points: ['A fast-paced operation, teamwork and shifts fitted around school.'],
+        points: [
+          'Creating 3D models and animations in Blender: textures, lighting, export for digital design.',
+          'Working in an international team on assigned projects: splitting up the work, checking in as it went and handing over the finished pieces.',
+          'The whole internship, and the team around it, ran in English.',
+        ],
       },
     ],
     projects: [
+      {
+        name: 'Automation & AI agents',
+        when: '2026',
+        study: 'erikkarasek.cz/automation',
+        points: [
+          'How I work across every project below: an agent only ever proposes and a human confirms, code and tests check what the model returns, and a cheap model filters before a larger one is called on what is left.',
+          'A set of my own AI agents that handles the routine around my job hunt and projects: at night they write up what I did and review the new code, by day they read companies\' replies, and in the morning they send a digest of new postings.',
+          'Everything arrives in Telegram with buttons, and nothing changes in the application board until one is pressed.',
+          'Node.js, Claude CLI, Telegram Bot API, IMAP and scheduled jobs (launchd, Cloudflare Workers); a watchdog reports a job that did not run, because a silent failure is worse than none.',
+        ],
+      },
       {
         name: 'Wisp',
         when: '2026',
@@ -258,16 +255,6 @@ export const cv = {
           'Three AI agents on Cloudflare Workers AI (tool calling): a posting link becomes a card with a fit score and a cover letter, a résumé reordered for that role, and a pre-interview brief on the company.',
           'A scout on a cron trigger: every morning it reads Jobs.cz and the Labour Office\'s open data, cheap filters drop senior and non-IT postings, and scoring runs in two rounds (a small model ranks, a larger one re-measures the promising ones against missing requirements).',
           'React 19 + Vite, a Hono REST API as a Cloudflare Pages Function, data in D1, TypeScript with shared types; every push runs API tests (Postman/Newman) and UI tests (Playwright) in CI against a fresh build with its own database.',
-        ],
-      },
-      {
-        name: 'Automation',
-        when: '2026',
-        study: 'erikkarasek.cz/automation',
-        points: [
-          'AI agents that handle the routine around my job hunt and projects: at night they write up what I did and review the new code, by day they read companies\' replies, and in the morning they send a digest of new postings.',
-          'An agent only ever proposes and a human confirms: everything arrives in Telegram with buttons, and nothing changes in the application board until one is pressed.',
-          'Node.js, Claude CLI, Telegram Bot API, IMAP and scheduled jobs (launchd, Cloudflare Workers); a watchdog reports a job that did not run, because a silent failure is worse than none.',
         ],
       },
       {
@@ -302,11 +289,18 @@ export const cv = {
       ['3D graphics', 'Blender: modelling, texturing, basic animation.'],
     ],
     education: [
-      { what: 'Information Technology and Economics (school-leaving exam)', where: 'T. G. Masaryk Business Academy, Kostelec nad Orlicí', when: '2021 – 2025' },
-      { what: 'Primary school', where: 'Týniště nad Orlicí', when: '2011 – 2020' },
+      {
+        what: 'Information Technology and Economics (Maturita)',
+        where: 'T. G. Masaryk Business Academy, Kostelec nad Orlicí',
+        when: '2021 – 2025',
+        points: [
+          'Programming and application development, databases and SQL, computer networks and hardware, web development.',
+          'The economics half of the field: accounting, tax, the basics of law and how a company runs, so a brief from the business side is not foreign to me.',
+        ],
+      },
     ],
     other: [
-      ['English', 'B2, Cambridge English First (FCE)'],
+      ['English', 'fluent, used daily at work and in my projects; Cambridge English First (FCE)'],
       ['Other', 'driving licence category B; PC hardware and builds, AI and new tech, fitness, fashion and style'],
     ],
   },
