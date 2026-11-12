@@ -18,6 +18,10 @@ The five canonical triage roles, each label string equal to its name. All five e
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root, neither of which exists yet. Load the `agent-domain-docs` skill; see `docs/agents/domain.md`.
 
+## Language
+
+Everything that goes to GitHub is written in English, even when the task or the conversation is in Czech: commit messages, pull request titles and bodies, issue titles and bodies, comments, review replies, release notes, docs and code comments. Czech stays only where it is the product itself: app and site copy, and UI strings or messages quoted verbatim.
+
 ## Committing
 
 Commit messages and PR descriptions carry **no** `Co-Authored-By: Claude` and no "Generated with Claude Code" line. The repo shows Erik as the only author. A squash merge copies co-author trailers out of the branch commits, so they have to be gone before the PR is merged.
