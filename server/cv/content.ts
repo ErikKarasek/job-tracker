@@ -36,9 +36,9 @@ export const cv = {
     profile:
       'Junior vývojář, který staví AI automatizace a aplikace od nápadu po nasazení. Mám vlastní AI agenty, kteří sami procházejí nabídky práce a hlídají moje projekty, a řídicí panel nad nimi pro Mac a iPhone. Výstupy modelu ověřuji kódem, ne slepou důvěrou. Naposledy jsem dělal analytika / testera na projektu ENTSO-E ve společnosti Unicorn, předtím IT podporu (helpdesk L1, Active Directory). Teď hledám roli v AI automatizaci nebo vývoji.',
     strengths: [
-      ['Rychlé učení a samostatnost', 'v nových technologiích a procesech se zorientuju rychle.'],
-      ['AI-first přístup', 'běžně využívám AI k rychlejšímu a kvalitnějšímu vývoji.'],
-      ['Spolehlivost a smysl pro detail', 'dovádím věci do konce.'],
+      ['Rychlé učení a samostatnost', 'Rust, SwiftUI i PyTorch jsem si osahal sám na vlastních projektech, které opravdu běží.'],
+      ['AI s kontrolou', 'model u mě jen navrhuje, výstup ověří kód a testy a o změně rozhoduje člověk.'],
+      ['Dotahování do konce', 'svoje projekty nasazuju, hlídám a opravuju, co se rozbije. Nekončí u dema.'],
     ],
     jobs: [
       {
@@ -113,14 +113,11 @@ export const cv = {
         ],
       },
       {
-        name: 'Subscription Tracker',
+        name: 'Od nuly: jazykový model a databáze',
         when: '2026',
-        link: 'github.com/ErikKarasek/subscription-tracker',
-        study: 'erikkarasek.cz/subscriptions',
         points: [
-          'Přehled předplatných: útrata po kategoriích, skutečně zaplacené částky v čase, hlídání blížících se plateb a nevyužívaných služeb.',
-          'Cloudflare Worker se statickými assety hostí web i Hono API a denní cron trigger posouvá platby a rozesílá e-maily přes Resend.',
-          'Data v Cloudflare D1; import ze screenshotu platby přes obrazový model na Cloudflare Workers AI, převod měn přes kurzy ECB.',
+          'Vlastní jazykový model v PyTorchi, bez stažených vah a bez API, natrénovaný jen na textu z mých repozitářů: 11 milionů parametrů, 1,947 bitu na bajt (o fous lepší než bzip2). Cestou jsem změřil, proč čeština stojí skoro dvakrát víc tokenů než angličtina.',
+          'Vlastní databáze v Rustu bez jediné knihovny: soubor rozdělený na stránky a B-strom nad nimi, sto tisíc klíčů a kterýkoli najde na tři čtení stránky. Další na řadě je cache stránek, transakce a SQL.',
         ],
       },
       {
@@ -135,10 +132,10 @@ export const cv = {
       },
     ],
     skills: [
-      ['Umělá inteligence', 'Vlastní AI agenti a asistenti na Gemini API a Cloudflare Workers AI (tool calling, prompt engineering); Claude a Gemini CLI při vývoji.'],
+      ['Umělá inteligence', 'Vlastní AI agenti a asistenti na Gemini API a Cloudflare Workers AI (tool calling, prompt engineering, záloha na jiný model při výpadku); vlastní malý transformer v PyTorchi; Claude a Gemini CLI při vývoji.'],
       ['Programování', 'TypeScript, Node.js, Python, React; Swift/SwiftUI a Rust ve vlastních appkách; web scraping, JSON/REST API.'],
-      ['Cloud & web', 'Cloudflare Workers, REST API integrace, client-side aplikace.'],
-      ['Testování SW', 'Test cases, testovací scénáře, DEV prostředí, Jira.'],
+      ['Cloud & data', 'Cloudflare Workers, Pages a D1, Supabase (Postgres), SQL, cron úlohy, Git a GitHub Actions.'],
+      ['Testování SW', 'Test cases a testovací scénáře, DEV prostředí, Jira; automatizované testy v Playwrightu a Postman/Newman v CI.'],
       ['IT podpora', 'Helpdesk L1, ticketování (JIRA), eskalace incidentů.'],
       ['Systémy & hardware', 'Windows 10/11, základy Active Directory, RDP, TeamViewer, LAN/Wi-Fi troubleshooting; diagnostika závad a výměna komponent.'],
       ['3D grafika', 'Blender: modelování, textury, základní animace.'],
@@ -181,9 +178,9 @@ export const cv = {
     profile:
       "A junior developer who builds AI automations and applications from idea to deployment. I run my own AI agents that read job postings and watch over my projects, plus a dashboard for them on Mac and iPhone. I check what the model returns with code rather than trusting it blindly. Most recently I worked as an analyst / tester on the ENTSO-E project at Unicorn, and before that in IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
     strengths: [
-      ['Fast learner, self-driven', 'I find my way around new technologies and processes quickly.'],
-      ['AI-first', 'I use AI every day to build faster and better.'],
-      ['Reliable, detail-minded', 'I see things through to the end.'],
+      ['Fast learner, self-driven', 'I picked up Rust, SwiftUI and PyTorch on my own projects, and those projects actually run.'],
+      ['AI with checks', 'a model only proposes; code and tests verify what it returns and a human decides.'],
+      ['Sees things through', 'I deploy my projects, watch them and fix what breaks. They do not stop at a demo.'],
     ],
     jobs: [
       {
@@ -258,14 +255,11 @@ export const cv = {
         ],
       },
       {
-        name: 'Subscription Tracker',
+        name: 'From scratch: a language model and a database',
         when: '2026',
-        link: 'github.com/ErikKarasek/subscription-tracker',
-        study: 'erikkarasek.cz/subscriptions',
         points: [
-          'Subscription overview: spend by category, what was actually paid over time, and a watch on upcoming payments and unused services.',
-          'One Cloudflare Worker serves the site and a Hono API; a daily cron rolls payments forward and sends email through Resend.',
-          'Data in Cloudflare D1; payment screenshots imported through a vision model on Cloudflare Workers AI, currencies converted at ECB rates.',
+          'My own language model in PyTorch, no downloaded weights and no API, trained only on text from my repositories: 11 million parameters, 1.947 bits per byte (just past bzip2). Along the way I measured why Czech costs almost twice as many tokens as English.',
+          'My own database in Rust with no dependencies: a file cut into pages and a B-tree over them, a hundred thousand keys and any one found in three page reads. A buffer pool, transactions and SQL come next.',
         ],
       },
       {
@@ -280,10 +274,10 @@ export const cv = {
       },
     ],
     skills: [
-      ['AI', 'My own AI agents and assistants on the Gemini API and Cloudflare Workers AI (tool calling, prompt engineering); Claude and Gemini CLI while developing.'],
+      ['AI', 'My own AI agents and assistants on the Gemini API and Cloudflare Workers AI (tool calling, prompt engineering, fallback to another model on failure); my own small transformer in PyTorch; Claude and Gemini CLI while developing.'],
       ['Programming', 'TypeScript, Node.js, Python, React; Swift/SwiftUI and Rust in my own apps; web scraping, JSON/REST APIs.'],
-      ['Cloud & web', 'Cloudflare Workers, REST API integrations, client-side apps.'],
-      ['Software testing', 'Test cases, test scenarios, DEV environments, Jira.'],
+      ['Cloud & data', 'Cloudflare Workers, Pages and D1, Supabase (Postgres), SQL, cron jobs, Git and GitHub Actions.'],
+      ['Software testing', 'Test cases and test scenarios, DEV environments, Jira; automated tests in Playwright and Postman/Newman in CI.'],
       ['IT support', 'L1 helpdesk, ticketing (JIRA), incident escalation.'],
       ['Systems & hardware', 'Windows 10/11, Active Directory basics, RDP, TeamViewer, LAN/Wi-Fi troubleshooting; fault diagnosis and component replacement.'],
       ['3D graphics', 'Blender: modelling, texturing, basic animation.'],
