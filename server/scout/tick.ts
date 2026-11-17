@@ -319,7 +319,8 @@ async function insertFound(env: Env, found: Candidate[]) {
   return results.reduce((n, r) => n + (r.meta.changes ?? 0), 0)
 }
 
-// Employers never to suggest, on any source: Unicorn is where Erik works now (asked 2026-10-05).
+// Employers never to suggest, on any source. Unicorn: added 2026-10-05 while Erik worked there; he left
+// in November 2026 and asked to keep it out anyway.
 const EXCLUDED_COMPANIES = /\bunicorn\b/i
 
 function triaged(title: string): [string, number] {
