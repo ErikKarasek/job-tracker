@@ -35,6 +35,9 @@ Rules:
 - Use only facts from the posting and the profile. Never invent salary, location or requirements.
 - fitScore is honest: 80+ only when he meets nearly every hard requirement. Missing years of experience or a core technology is a real gap.
 - The cover letter is 120-180 words and cites concrete projects from the profile that match the role. No clichés, no made-up experience.
+- Open the cover letter with the one thing in the posting he matches best and the project or job that proves it, not with "I am applying for". No generic praise of the company.
+- If a hard requirement is missing, name it once, plainly, and say what he has instead. Never imply he has it.
+- End with his availability (his last job ended in November 2026, so he can start now) and a link to erikkarasek.cz.
 - Write the cover letter in Czech, unless the posting itself is written in English. An English job title alone does not make the posting English.
 - Write fitSummary in English, the language of the tracker's interface.
 - Credit a project only with the technologies the profile lists for it (Nexus Grind is TypeScript, not Python).
