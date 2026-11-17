@@ -12,7 +12,7 @@ const shared = {
   web: 'erikkarasek.cz',
   // Served by the portfolio; the head-only crop of the hero shot.
   photo: 'https://erikkarasek.cz/img/me-cv.jpg',
-  tech: ['AI agenti', 'Workers AI', 'LLM API', 'Prompt engineering', 'REST/JSON API', 'TypeScript', 'Node.js', 'Python', 'React', 'SwiftUI', 'Tauri & Rust', 'Cloudflare Workers & D1'],
+  tech: ['AI agenti', 'Gemini API', 'Workers AI', 'LLM API', 'Prompt engineering', 'REST/JSON API', 'TypeScript', 'Node.js', 'Python', 'React', 'SwiftUI', 'Tauri & Rust', 'Cloudflare Workers & D1'],
 }
 
 export const cv = {
@@ -34,7 +34,7 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      'Junior vývojář, který staví AI automatizace a aplikace od nápadu po nasazení. Mám vlastní AI agenty, kteří sami procházejí nabídky práce a hlídají moje projekty, a řídicí panel nad nimi pro Mac a iPhone. Výstupy modelu ověřuji kódem, ne slepou důvěrou. Pracuji jako analytik / tester na projektu ENTSO-E ve společnosti Unicorn, dřív IT podpora (helpdesk L1, Active Directory). Hledám roli v AI automatizaci nebo vývoji.',
+      'Junior vývojář, který staví AI automatizace a aplikace od nápadu po nasazení. Mám vlastní AI agenty, kteří sami procházejí nabídky práce a hlídají moje projekty, a řídicí panel nad nimi pro Mac a iPhone. Výstupy modelu ověřuji kódem, ne slepou důvěrou. Naposledy jsem dělal analytika / testera na projektu ENTSO-E ve společnosti Unicorn, předtím IT podporu (helpdesk L1, Active Directory). Teď hledám roli v AI automatizaci nebo vývoji.',
     strengths: [
       ['Rychlé učení a samostatnost', 'v nových technologiích a procesech se zorientuju rychle.'],
       ['AI-first přístup', 'běžně využívám AI k rychlejšímu a kvalitnějšímu vývoji.'],
@@ -43,7 +43,7 @@ export const cv = {
     jobs: [
       {
         role: 'Analytik / Tester',
-        when: 'červenec 2026 – současnost',
+        when: 'červenec – listopad 2026',
         where: 'Unicorn · projekt ENTSO-E Transparency Platform · Hradec Králové (hybridně)',
         points: [
           'Psaní testovacích scénářů (test cases) pro datová rozšíření platformy.',
@@ -94,7 +94,7 @@ export const cv = {
         study: 'erikkarasek.cz/wisp',
         points: [
           'Řídicí panel nad vlastními AI agenty: Mac appka v Tauri (TypeScript + Rust) s overlayem v notchi a nativní iPhone klient ve SwiftUI s widgety a Live Activity v Dynamic Islandu.',
-          'Claude, ChatGPT (Codex CLI) i Gemini vedle sebe se spotřebou a časem resetu; kroky agentů streamované živě přes hooky a povolení pro Clauda odkliknuté z notche, zamykací obrazovky i Telegramu.',
+          'Claude, ChatGPT (Codex CLI), Gemini i Grok vedle sebe se spotřebou a časem resetu; kroky agentů streamované živě přes hooky a povolení pro Clauda odkliknuté z notche, zamykací obrazovky i Telegramu.',
           'Cloudflare Worker s D1 jako relay mezi Macem a telefonem (žádné přímé spojení); bearer token porovnávaný v konstantním čase, hooky s tajemstvím pro každou instalaci, tokeny v Keychainu.',
           'Drží Mac vzhůru, dokud agenti pracují, i se zavřeným víkem (pravidlo pro sudo jen na spánek), s pojistkami na baterii a teplotu procesoru; 20 animovaných postaviček upravitelných i z telefonu.',
           'Noční směna: úkol z Telegramu udělá Claude, až nejsem u Macu, ve vlastní pracovní kopii a větvi a pošle draft PR; mluvení do notche přes Gemini (otázka, připomínka, úkol pro agenta). K tomu Wisp Buddy, postavička na ploše (fyzika v Rustu, okna z CoreGraphics, připomínky přes Gemini).',
@@ -107,7 +107,7 @@ export const cv = {
         study: 'erikkarasek.cz/job-tracker',
         points: [
           'Nástěnka na sledování přihlášek (fáze wishlist → applied → interview → offer/rejected) se statistikami nad historií přechodů: funnel, denní graf a hlídání přihlášek bez aktivity.',
-          'Tři AI agenti na Cloudflare Workers AI (tool calling): z odkazu na inzerát vznikne karta se skóre shody a průvodním dopisem, životopis přeskládaný na míru roli (kontrolovaný proti skutečnému) a před pohovorem brief o firmě s pravděpodobnými otázkami.',
+          'Tři AI agenti s tool callingem na Gemini, se zálohou na Cloudflare Workers AI: z odkazu na inzerát vznikne karta se skóre shody a průvodním dopisem, životopis přeskládaný na míru roli (kontrolovaný proti skutečnému) a před pohovorem brief o firmě s pravděpodobnými otázkami.',
           'Scout na cron triggeru: ráno sám projde IT obory na Jobs.cz i otevřená data Úřadu práce, levné filtry uberou seniorní a neIT nabídky před voláním modelu a hodnotí se ve dvou kolech (malý model seřadí, větší přeměří nadějné podle chybějících požadavků).',
           'React 19 + Vite + Tailwind v4, REST API v Hono jako Cloudflare Pages Function, data v Cloudflare D1, TypeScript se sdílenými typy; na každý push běží v CI testy API (Postman/Newman) i boardu (Playwright) proti čerstvě sestavené kopii s vlastní databází.',
         ],
@@ -135,7 +135,7 @@ export const cv = {
       },
     ],
     skills: [
-      ['Umělá inteligence', 'Vlastní AI agenti a asistenti na Cloudflare Workers AI (tool calling, prompt engineering); Claude a Gemini CLI při vývoji.'],
+      ['Umělá inteligence', 'Vlastní AI agenti a asistenti na Gemini API a Cloudflare Workers AI (tool calling, prompt engineering); Claude a Gemini CLI při vývoji.'],
       ['Programování', 'TypeScript, Node.js, Python, React; Swift/SwiftUI a Rust ve vlastních appkách; web scraping, JSON/REST API.'],
       ['Cloud & web', 'Cloudflare Workers, REST API integrace, client-side aplikace.'],
       ['Testování SW', 'Test cases, testovací scénáře, DEV prostředí, Jira.'],
@@ -179,7 +179,7 @@ export const cv = {
       qr: 'Portfolio',
     },
     profile:
-      "A junior developer who builds AI automations and applications from idea to deployment. I run my own AI agents that read job postings and watch over my projects, plus a dashboard for them on Mac and iPhone. I check what the model returns with code rather than trusting it blindly. I work as an analyst / tester on the ENTSO-E project at Unicorn, previously IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
+      "A junior developer who builds AI automations and applications from idea to deployment. I run my own AI agents that read job postings and watch over my projects, plus a dashboard for them on Mac and iPhone. I check what the model returns with code rather than trusting it blindly. Most recently I worked as an analyst / tester on the ENTSO-E project at Unicorn, and before that in IT support (L1 helpdesk, Active Directory). I'm looking for a role in AI automation or development.",
     strengths: [
       ['Fast learner, self-driven', 'I find my way around new technologies and processes quickly.'],
       ['AI-first', 'I use AI every day to build faster and better.'],
@@ -188,7 +188,7 @@ export const cv = {
     jobs: [
       {
         role: 'Analyst / Tester',
-        when: 'July 2026 – present',
+        when: 'July – November 2026',
         where: 'Unicorn · ENTSO-E Transparency Platform project · Hradec Králové (hybrid)',
         points: [
           'Writing test cases for data extensions of the platform.',
@@ -239,7 +239,7 @@ export const cv = {
         study: 'erikkarasek.cz/wisp',
         points: [
           'A dashboard for my own AI agents: a Tauri Mac app (TypeScript + Rust) with an overlay in the notch, and a native SwiftUI iPhone client with widgets and a Live Activity in the Dynamic Island.',
-          'Claude, ChatGPT (Codex CLI) and Gemini side by side with usage and reset times; agent steps streamed live through hooks, and a Claude permission answered from the notch, lock screen or Telegram.',
+          'Claude, ChatGPT (Codex CLI), Gemini and Grok side by side with usage and reset times; agent steps streamed live through hooks, and a Claude permission answered from the notch, lock screen or Telegram.',
           'A Cloudflare Worker with D1 as the relay between Mac and phone (no direct connection); a bearer token compared in constant time, hooks with a per-install secret, tokens in the Keychain.',
           'Keeps the Mac awake while agents work, lid closed too (a sudoers rule for sleep only), with battery and CPU temperature safeties; 20 animated characters, editable from the phone too.',
           'A night shift: a task sent on Telegram is done by Claude while I am away from the Mac, in its own working copy and branch, ending in a draft PR; talking to the notch through Gemini (a question, a reminder, a task for an agent). Plus Wisp Buddy, a desktop character (physics in Rust, windows from CoreGraphics, reminders through Gemini).',
@@ -252,7 +252,7 @@ export const cv = {
         study: 'erikkarasek.cz/job-tracker',
         points: [
           'A board for tracking applications (wishlist → applied → interview → offer/rejected) with stats built on the history of stage changes: a funnel, a per-day graph and a watch on applications gone quiet.',
-          'Three AI agents on Cloudflare Workers AI (tool calling): a posting link becomes a card with a fit score and a cover letter, a résumé reordered for that role, and a pre-interview brief on the company.',
+          'Three tool-calling AI agents on Gemini, with Cloudflare Workers AI as the fallback: a posting link becomes a card with a fit score and a cover letter, a résumé reordered for that role, and a pre-interview brief on the company.',
           'A scout on a cron trigger: every morning it reads Jobs.cz and the Labour Office\'s open data, cheap filters drop senior and non-IT postings, and scoring runs in two rounds (a small model ranks, a larger one re-measures the promising ones against missing requirements).',
           'React 19 + Vite, a Hono REST API as a Cloudflare Pages Function, data in D1, TypeScript with shared types; every push runs API tests (Postman/Newman) and UI tests (Playwright) in CI against a fresh build with its own database.',
         ],
@@ -280,7 +280,7 @@ export const cv = {
       },
     ],
     skills: [
-      ['AI', 'My own AI agents and assistants on Cloudflare Workers AI (tool calling, prompt engineering); Claude and Gemini CLI while developing.'],
+      ['AI', 'My own AI agents and assistants on the Gemini API and Cloudflare Workers AI (tool calling, prompt engineering); Claude and Gemini CLI while developing.'],
       ['Programming', 'TypeScript, Node.js, Python, React; Swift/SwiftUI and Rust in my own apps; web scraping, JSON/REST APIs.'],
       ['Cloud & web', 'Cloudflare Workers, REST API integrations, client-side apps.'],
       ['Software testing', 'Test cases, test scenarios, DEV environments, Jira.'],
