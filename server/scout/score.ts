@@ -9,7 +9,7 @@
 // which need the better model, are written when Erik opens a suggestion, not for every posting.
 import { PROFILE } from '../agent/profile'
 import { chat, type Llm } from '../ai/chat'
-import { capScore } from './cap'
+import { capFit, capScore, type Level } from './cap'
 
 export { capScore }
 
@@ -29,20 +29,23 @@ const SCHEMA = {
     fitSummary: { type: 'string' },
     missingMustHaves: { type: 'array', items: { type: 'string' } },
     yearsRequired: { type: 'number' },
+    level: { type: 'string', enum: ['junior', 'medior', 'senior', 'unspecified'] },
   },
-  required: ['fitScore', 'fitSummary', 'missingMustHaves', 'yearsRequired'],
+  required: ['fitScore', 'fitSummary', 'missingMustHaves', 'yearsRequired', 'level'],
 }
 
 const SYSTEM = `You judge how well a job posting fits Erik. Answer with JSON only:
 - missingMustHaves: at most 5 REQUIRED qualifications Erik has no evidence for: a tool, technology, certificate, education or amount of experience (e.g. "API testing in Postman", "C#", "university degree"). Not duties or tasks of the job ("verify features", "cooperate with colleagues") — only what a candidate must already have. Nothing the posting calls an advantage, a plus, "výhodou", "ideálně" or "not required". Empty list if he meets everything required.
-- yearsRequired: years of experience the posting asks for (use the number even if it says "ideally"), 0 if it asks for none.
+- yearsRequired: years of experience the posting asks for (use the number even if it says "ideally"; for a range like "2-4 years" the lower end), 0 if it asks for none.
+- level: who the posting is written for. "junior" when it names juniors, graduates or absolventi, or says experience is not needed; "senior" for senior, lead, expert or "zkušený" roles and for 3+ years; "medior" for mid-level or 1-3 years; otherwise "unspecified".
+- A required university degree (VŠ, Bc., Ing., bachelor's) counts as a missing must-have: Erik has a secondary-school maturita.
 - fitScore: 0-100, honest. 80+ only when he meets nearly every hard requirement.
 - fitSummary: two sentences in English. First: which of the posting's requirements Erik meets best, naming his concrete experience. Second: the most important requirement he lacks. Never describe what the posting fails to mention.
 
 Erik's profile:
 ${PROFILE}`
 
-export type FitScore = { fitScore: number; fitSummary: string; neurons: number; modelScore: number; missingMustHaves: string[]; yearsRequired: number }
+export type FitScore = { fitScore: number; fitSummary: string; neurons: number; modelScore: number; missingMustHaves: string[]; yearsRequired: number; level: Level }
 
 export async function scoreFit(env: Llm, posting: string, precise = false): Promise<FitScore> {
   const out = await chat(env, precise ? 'smart' : 'cheap')({
@@ -50,7 +53,7 @@ export async function scoreFit(env: Llm, posting: string, precise = false): Prom
       { role: 'system', content: SYSTEM },
       { role: 'user', content: `Job posting:\n\n${posting.slice(0, 8_000)}` },
     ],
-    max_tokens: 350,
+    max_tokens: 400,
     schema: SCHEMA,
   })
 
@@ -59,6 +62,7 @@ export async function scoreFit(env: Llm, posting: string, precise = false): Prom
     fitSummary?: unknown
     missingMustHaves?: unknown
     yearsRequired?: unknown
+    level?: unknown
   }
   const modelScore = typeof data?.fitScore === 'number' ? Math.min(100, Math.max(0, Math.round(data.fitScore))) : null
   const fitSummary = typeof data?.fitSummary === 'string' ? data.fitSummary.trim() : ''
@@ -70,8 +74,11 @@ export async function scoreFit(env: Llm, posting: string, precise = false): Prom
     .filter((m): m is string => typeof m === 'string' && m.trim() !== '' && !optional.test(m))
     .slice(0, 5)
   const years = typeof data.yearsRequired === 'number' && Number.isFinite(data.yearsRequired) ? data.yearsRequired : 0
-  const fitScore = capScore(modelScore, missingMustHaves.length, years)
-  return { fitScore, fitSummary, neurons: out.neurons, modelScore, missingMustHaves, yearsRequired: years }
+  const level: Level = ['junior', 'medior', 'senior'].includes(data.level as string) ? (data.level as Level) : 'unspecified'
+  const capped = capFit(modelScore, { missing: missingMustHaves, years, level })
+  // A capped score says why on the card, or a 45 next to a glowing summary reads as a bug.
+  const summary = capped.reason ? `${fitSummary} Score capped at ${capped.score}: ${capped.reason}.` : fitSummary
+  return { fitScore: capped.score, fitSummary: summary, neurons: out.neurons, modelScore, missingMustHaves, yearsRequired: years, level }
 }
 
 /** Jobs.cz states pay as "Plat 30 000 – 40 000 Kč" (or CZK, or a single figure). Null when it does not. */
