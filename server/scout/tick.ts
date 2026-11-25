@@ -19,6 +19,7 @@ import { fetchMpsv } from './mpsv'
 import { reachable } from './commute'
 import { sendBrief, telegramReady, type TelegramEnv } from './telegram'
 import { CAREER_PAGES, fetchCareerPage } from './careers'
+import { BOARDS, fetchBoard } from './boards'
 import { briefText, getBrief } from '../interview/brief'
 import { MAX_PAGES, PAGE_SIZE, PLACES, SOURCES, looksLikeIt, parseResults, searchUrl, triage, type Place, type Source } from './search'
 
@@ -123,6 +124,20 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
       return { step: 'search', detail: `${page.company} careers: ${found.length} postings, ${added} new` }
     } catch (err) {
       return { step: 'search', detail: `${page.company} careers failed: ${String(err)}` }
+    }
+  }
+
+  // 1d. Other job boards (boards.ts): StartupJobs and Profesia, each read once a day.
+  for (const board of BOARDS) {
+    const step = `search:board:${board.key}`
+    if (done.has(step)) continue
+    await mark(step)
+    try {
+      const found = await fetchBoard(board)
+      const added = await insertFound(env, found.map((f) => ({ ...f, query: board.label })))
+      return { step: 'search', detail: `${board.label}: ${found.length} postings, ${added} new` }
+    } catch (err) {
+      return { step: 'search', detail: `${board.label} failed: ${String(err)}` }
     }
   }
 
