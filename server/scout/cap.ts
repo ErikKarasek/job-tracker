@@ -47,7 +47,11 @@ export function capFit(score: number, gaps: Gaps, now = Date.now()): { score: nu
   return { score: tightest[0], reason: tightest[1] }
 }
 
-/** The capped score alone, from a count of missing requirements (the older call). */
+/**
+ * The capped score alone, from a count of missing requirements (the older call).
+ * A count carries no wording, so the degree cap (45) can never apply here, and neither can the
+ * seniority cap. A call that must catch a required degree has to use `capFit` with the items.
+ */
 export function capScore(fitScore: number, missingMustHaves: number, yearsRequired: number, now = Date.now()) {
   return capFit(fitScore, { missing: Array.from({ length: missingMustHaves }, () => 'requirement'), years: yearsRequired }, now).score
 }
