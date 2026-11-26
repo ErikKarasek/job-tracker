@@ -131,13 +131,15 @@ export async function tick(env: ScoutEnv): Promise<TickResult> {
   for (const board of BOARDS) {
     const step = `search:board:${board.key}`
     if (done.has(step)) continue
-    await mark(step)
     try {
       const found = await fetchBoard(board)
       const added = await insertFound(env, found.map((f) => ({ ...f, query: board.label })))
+      // Marked on success only: a failed board is tried again on the next tick, and the boards
+      // after it are not held up by it.
+      await mark(step)
       return { step: 'search', detail: `${board.label}: ${found.length} postings, ${added} new` }
     } catch (err) {
-      return { step: 'search', detail: `${board.label} failed: ${String(err)}` }
+      console.error(`[scout] ${board.label} failed, trying the next board: ${String(err)}`)
     }
   }
 
